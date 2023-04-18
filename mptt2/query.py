@@ -8,7 +8,6 @@ class ConvertableQuery(Q):
     
     def convert_field_ref_expression(self, children, key, value):
         if isinstance(value, CombinedExpression):
-            # TODO: convert F to OuterRef objects
             if isinstance(value.lhs, F):
                 value.lhs = OuterRef(value.lhs.name)
             elif isinstance (value.rhs, F):
@@ -64,8 +63,6 @@ class AncestorsQuery(ConvertableQuery):
             **kwargs, 
             **query_kwargs
         )
-
-
 
 
 class FamilyQuery(DescendantsQuery):
