@@ -12,6 +12,7 @@ class Tree(Model):
 
 
 class Node(Model):
+    parent = ForeignKey(to="self", on_delete=CASCADE)
     mptt_tree_id = ForeignKey(to=Tree, on_delete=CASCADE)
     mptt_lft = PositiveIntegerField()
     mptt_rgt = PositiveIntegerField()
@@ -38,6 +39,14 @@ class Node(Model):
         family = self.objects.filter(FamilyQuery(include_self=include_self))
         return family.order_by("-mptt_lft") if asc else family
     
-    def get_siblings(self, include_self=False, asc=False):
+    def get_siblings(self, include_self=False, asc=False) -> QuerySet:
         siblings = self.objects.filter(SiblingsQuery(include_self=include_self))
         return siblings.order_by("-mptt_lft") if asc else siblings
+    
+    def is_root_node(self) -> bool:
+        return self.parent is None
+    
+    def is_leaf_node(self):
+        return (self.mptt_rgt - self.mptt_lft) // 2 == 0
+    
+    
