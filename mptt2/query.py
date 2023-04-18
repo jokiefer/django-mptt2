@@ -87,5 +87,3 @@ class TreeQuerySet(QuerySet):
     
     def with_descendant_count(self):
         self.annotate(descendant_count=F("mptt_rgt") - F("mptt_lft") // 2)
-
-    
