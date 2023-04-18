@@ -2,6 +2,7 @@ from typing import Any, Dict
 from django.db.models.query_utils import Q
 from django.db.models.expressions import F, OuterRef, CombinedExpression
 from django.db.models.query import QuerySet
+from django.utils.translation import gettext as _
 
 
 class ConvertableQuery(Q):
@@ -90,7 +91,7 @@ class LeafNodesQuery(DescendantsQuery):
 
 
 
-class TreeQuerySet(QuerySet):
-    
+class TreeQuerySet(QuerySet):  
+
     def with_descendant_count(self):
         self.annotate(descendant_count=F("mptt_rgt") - F("mptt_lft") // 2)
