@@ -19,6 +19,11 @@ class Node(Model):
 
     objects = TreeQuerySet.as_manager()
 
+    class Meta:
+        ordering = ["mptt_tree_id", "mptt_lft"]
+
+        # TODO: indexes
+
     def get_descendants(self, include_self=False)-> QuerySet:
         self.objects.filter(DescendantsQuery(include_self=include_self))
 
