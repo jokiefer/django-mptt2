@@ -1,10 +1,10 @@
 from django.test import SimpleTestCase
 
-from mptt2.query import ParentQuery, DescendantsQuery, AncestorsQuery, FamilyQuery, ChildrenQuery, LeafNodesQuery, DescendantCountQuery
+from mptt2.query import ParentQuery, DescendantsQuery, AncestorsQuery, FamilyQuery, ChildrenQuery, LeafNodesQuery, SiblingsQuery
 
 
 from django.db.models.query_utils import Q
-from django.db.models.expressions import F, OuterRef, Value
+from django.db.models.expressions import F, OuterRef
 
 class QTestMixin(object):
     
@@ -207,6 +207,21 @@ class TestChildrenQuery(QTestMixin, SimpleTestCase):
         self.assertQEqual(expected, query)
 
 
+class TestSiblingsQuery(QTestMixin, SimpleTestCase):
+    
+    def test_default_query(self):
+        query = SiblingsQuery()
+        expected = Q(parent=F("parent")) & ~Q(pk=F("pk"))
+        self.assertQEqual(expected, query)
+
+    def test_subquery(self):
+        query = SiblingsQuery()
+        query.to_subquery()
+        expected = Q(parent=OuterRef("parent")) & ~Q(pk=OuterRef("pk"))
+        self.assertQEqual(expected, query)
+
+
+
 class TestLeafNodesQuery(QTestMixin, SimpleTestCase):
     
     def test_default_query(self):
@@ -245,19 +260,4 @@ class TestLeafNodesQuery(QTestMixin, SimpleTestCase):
             mptt_rgt_gte=OuterRef("mptt_rgt"),
             mptt_tree_id=OuterRef("mptt_tree_id"),
             mptt_lft=OuterRef("mptt_rgt") - 1)
-        self.assertQEqual(expected, query)
-
-
-class TestDescendantsCountQuery(QTestMixin, SimpleTestCase):
-    
-    def test_default_query(self):
-        query = DescendantCountQuery()
-        expected = Q(
-            (F("mptt_rgt") - F("mptt_lft")))
-        self.assertQEqual(expected, query)
-
-    def test_subquery(self):
-        query = DescendantCountQuery()
-        query.to_subquery()
-        expected = Q((OuterRef("mptt_rgt") - OuterRef("mptt_lft")) )
         self.assertQEqual(expected, query)

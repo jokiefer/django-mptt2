@@ -3,8 +3,8 @@ from django.db.models.fields import PositiveIntegerField
 from django.db.models.fields.related import ForeignKey
 from django.db.models.deletion import CASCADE
 from django.db.models.query import QuerySet
-
-from mptt2.query import DescendantsQuery, AncestorsQuery, FamilyQuery, TreeQuerySet
+from django.db.models.indexes import Index
+from mptt2.query import DescendantsQuery, AncestorsQuery, FamilyQuery, SiblingsQuery, TreeQuerySet
 
 
 class Tree(Model):
@@ -20,15 +20,24 @@ class Node(Model):
     objects = TreeQuerySet.as_manager()
 
     class Meta:
+        abstract = True
         ordering = ["mptt_tree_id", "mptt_lft"]
+        indexes = [
+            Index(fields=("mptt_tree_id", "mptt_lft", "mptt_rgt"))
+        ]
 
-        # TODO: indexes
+    def get_descendants(self, include_self=False, asc=False)-> QuerySet:
+        descendants = self.objects.filter(DescendantsQuery(include_self=include_self))
+        return descendants.order_by("-mptt_lft") if asc else descendants
 
-    def get_descendants(self, include_self=False)-> QuerySet:
-        self.objects.filter(DescendantsQuery(include_self=include_self))
+    def get_ancestors(self, include_self=False, asc=False) -> QuerySet:
+        ancestors = self.objects.filter(AncestorsQuery(include_self=include_self))
+        return ancestors.order_by("-mptt_lft") if asc else ancestors
 
-    def get_ancestors(self, include_self=False) -> QuerySet:
-        self.objects.filter(AncestorsQuery(include_self=include_self))
-
-    def get_family(self, include_self=False) -> QuerySet:
-        self.objects.filter(FamilyQuery(include_self=include_self))
+    def get_family(self, include_self=False, asc=False) -> QuerySet:
+        family = self.objects.filter(FamilyQuery(include_self=include_self))
+        return family.order_by("-mptt_lft") if asc else family
+    
+    def get_siblings(self, include_self=False, asc=False):
+        siblings = self.objects.filter(SiblingsQuery(include_self=include_self))
+        return siblings.order_by("-mptt_lft") if asc else siblings
