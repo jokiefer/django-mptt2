@@ -79,11 +79,22 @@ class Node(Model):
 
         # updating parent
         self.__class__.objects.filter(
-            mptt_parent=self.mptt_parent,
+            pk=self.mptt_parent.pk,
             mptt_tree=self.mptt_tree
-        ).update(mptt_rgt=self.mptt_rgt)
+        ).update(mptt_rgt=self.mptt_lft)
 
-           
+        # FIXME: if rightmost child of root is deleted, 
+        # the following update is duplicated
+        self.__class__.objects.filter(
+            mptt_tree=self.mptt_tree,
+            mptt_lft=1
+        ).update(
+            mptt_rgt=self.__class__.objects.filter(
+                mptt_tree=self.mptt_tree,
+                mptt_depth=1,
+            ).values_list("mptt_lft", named=True).last().mptt_lft
+        )
+
         return super().delete(*args, **kwargs)
     
     def move_to(self):

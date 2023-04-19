@@ -57,7 +57,7 @@
             "mptt_tree": 1,
             "mptt_lft": 7,
             "mptt_rgt": 8,
-            "mptt_depth": 1
+            "mptt_depth": 2
         }
     },
     {
@@ -68,7 +68,7 @@
             "mptt_tree": 1,
             "mptt_lft": 9,
             "mptt_rgt": 10,
-            "mptt_depth": 1
+            "mptt_depth": 2
         }
     }
     ]
