@@ -1,0 +1,75 @@
+[
+    {
+        "model": "mptt2.tree",
+        "pk": 1,
+        "fields": {
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 1,
+        "fields": {
+            "mptt_parent": null,
+            "mptt_tree": 1,
+            "mptt_lft": 1,
+            "mptt_rgt": 12,
+            "mptt_depth": 0
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 2,
+        "fields": {
+            "mptt_parent": 1,
+            "mptt_tree": 1,
+            "mptt_lft": 2,
+            "mptt_rgt": 3,
+            "mptt_depth": 1
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 3,
+        "fields": {
+            "mptt_parent": 1,
+            "mptt_tree": 1,
+            "mptt_lft": 4,
+            "mptt_rgt": 5,
+            "mptt_depth": 1
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 4,
+        "fields": {
+            "mptt_parent": 1,
+            "mptt_tree": 1,
+            "mptt_lft": 6,
+            "mptt_rgt": 11,
+            "mptt_depth": 1
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 5,
+        "fields": {
+            "mptt_parent": 4,
+            "mptt_tree": 1,
+            "mptt_lft": 7,
+            "mptt_rgt": 8,
+            "mptt_depth": 1
+        }
+    },
+    {
+        "model": "tests.simplenode",
+        "pk": 6,
+        "fields": {
+            "mptt_parent": 4,
+            "mptt_tree": 1,
+            "mptt_lft": 9,
+            "mptt_rgt": 10,
+            "mptt_depth": 1
+        }
+    }
+    ]
+    

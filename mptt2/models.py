@@ -1,5 +1,5 @@
 from django.db.models import Model
-from django.db.models.fields import PositiveIntegerField
+from django.db.models.fields import PositiveIntegerField, BooleanField
 from django.db.models.fields.related import ForeignKey
 from django.db.models.deletion import CASCADE
 from django.db.models.query import QuerySet
@@ -16,9 +16,8 @@ from mptt2.query import DescendantsQuery, AncestorsQuery, FamilyQuery, SiblingsQ
 class Tree(Model):
     pass
 
-
 class Node(Model):
-    mptt_parent = ForeignKey(to="self", on_delete=CASCADE)
+    mptt_parent = ForeignKey(to="self", on_delete=CASCADE, null=True)
     mptt_tree = ForeignKey(to=Tree, on_delete=CASCADE)
     mptt_lft = PositiveIntegerField()
     mptt_rgt = PositiveIntegerField()
@@ -34,61 +33,57 @@ class Node(Model):
         ]
         constraints = [
             CheckConstraint(
-                check=Q(mptt_rgt_gt=F("mptt_lft")), 
+                check=Q(mptt_rgt__gt=F("mptt_lft")), 
                 name="rgt_gt_lft",
-                violation_error_message=_("The right side value rgt is allways greater than the node left side value lft.")
-            ),
-            CheckConstraint(
-                check=Q()
-            ),
-            UniqueConstraint(
-                fields=["mptt_tree_id", "mptt_lft"],
-                name="unique_tree_node_lft_check",
-                violation_error_message=_("A node with the same lft value exists for this tree.")
-            ),
-            UniqueConstraint(
-                fields=["mptt_tree_id", "mptt_rgt"],
-                name="unique_tree_node_rgt_check",
-                violation_error_message=_("A node with the same rgt value exists for this tree.")
+                violation_error_message=_("The right side value rgt is allways greater than the node left side value lft."),
+            # ),
+            # UniqueConstraint(
+            #     fields=["mptt_tree_id", "mptt_lft"],
+            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
+            #     name="unique_tree_node_lft_check",
+            #     violation_error_message=_("A node with the same lft value exists for this tree.")
+            # ),
+            # UniqueConstraint(
+            #     fields=["mptt_tree_id", "mptt_rgt"],
+            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
+            #     name="unique_tree_node_rgt_check",
+            #     violation_error_message=_("A node with the same rgt value exists for this tree.")
             )
         ]
 
     @atomic
     def delete(self, *args, **kwargs):
-        if self.has_leafs:
-            self.objects.filter(
-                    mptt_tree=self.mptt_tree, 
-                    mptt_rgt_gt=self.mptt_rgt
-                ).update(
-                    mptt_rgt=F("mptt_rgt") - self.child_count
-                )
-            self.objects.filter(
-                    mptt_tree=self.mptt_tree,
-                    mptt_lft_gt=self.mptt_rgt
-            ).update(
-                mptt_lft = F("mptt_lft") - self.child_count
-            )
-        else:
-            self.objects.filter(
-                    mptt_tree=self.mptt_tree,
-                    mptt_lft_gte=self.mptt_lft,
-                    mptt_rgt_lte=self.mptt_rgt
-            ).update(
-                mptt_rgt=F("mptt_rgt") - 1,
-                mptt_lft=F("mptt_lft") - 1,
-                parent=self.mptt_parent
-            )
-            self.objects.filter(
-                    mptt_rgt_gt=self.mptt_rgt
-            ).update(
-                mptt_rgt=F("mptt_rgt") - 2
-            )
-            self.objects.filter(
-                    mptt_lft_gt=self.mptt_rgt
-            ).update(
-                mptt_lft=F("mptt_lft") - 2
-            )
-        
+
+        # updating the right tree (siblings descendants)
+        self.__class__.objects.filter(
+            mptt_tree=self.mptt_tree,
+            mptt_lft__gt=self.mptt_lft, 
+            mptt_rgt__gt=self.mptt_rgt
+        ).update(
+            mptt_lft=F("mptt_lft") - (1 + self.descendant_count * 2),
+            mptt_rgt=F("mptt_rgt") - (1 + self.descendant_count * 2)
+        )
+
+
+        # updating ancestors without parent and root
+        self.__class__.objects.filter(
+            ~Q(mptt_parent=self.mptt_parent),
+            mptt_parent__isnull=False,
+            mptt_tree=self.mptt_tree,
+            mptt_lft__lt=self.mptt_lft,
+            mptt_rgt__gt=self.mptt_rgt,
+        ).update(
+            mptt_lft=F("mptt_lft") - (1 + self.descendant_count * 2),
+            mptt_rgt=F("mptt_rgt") - (1 + self.descendant_count * 2)
+        )
+
+        # updating parent
+        self.__class__.objects.filter(
+            mptt_parent=self.mptt_parent,
+            mptt_tree=self.mptt_tree
+        ).update(mptt_rgt=self.mptt_rgt)
+
+           
         return super().delete(*args, **kwargs)
     
     def move_to(self):
@@ -135,6 +130,3 @@ class Node(Model):
         else:
             return (self.mptt_rgt - self.mptt_lft - 1) // 2
         
-    @property
-    def child_count(self):
-        return self.mptt_rgt - self.mptt_lft + 1
