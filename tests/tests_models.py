@@ -1,8 +1,10 @@
 from django.test import TestCase
+
 from tests.models import SimpleNode
 
+
 class TestNodeModel(TestCase):
-    
+
     fixtures = ["simple_nodes.json"]
 
     def test_delete(self):
@@ -12,7 +14,7 @@ class TestNodeModel(TestCase):
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
 
         self.assertEqual(recalculated_tree.count(), 9)
-        
+
         self.assertEqual(recalculated_tree[0].mptt_lft, 1)
         self.assertEqual(recalculated_tree[0].mptt_rgt, 18)
 
