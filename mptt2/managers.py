@@ -53,7 +53,17 @@ class TreeManager(Manager):
                     mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gt=target.mptt_lft).update(
                     mptt_lft=F("mptt_lft") + 2)
-
+        elif position == Position.LEFT.value:
+            node.mptt_parent = target
+            node.mptt_tree = target.mptt_tree
+            node.mptt_depth = target.mptt_depth
+            node.mptt_lft = target.mptt_lft
+            node.mptt_rgt = target.mptt_lft + 1
+            with atomic():
+                self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gte=target.mptt_lft).update(
+                    mptt_lft=F("mptt_lft") + 2, mptt_rgt=F("mptt_rgt") + 2)
+                self.filter(mptt_tree=F("mptt_tree"), mptt_lft=1).update(
+                    mptt_rgt=F("mptt_rgt") + 2)
         else:
             raise NotImplementedError("given position is not supported")
         node.save()
