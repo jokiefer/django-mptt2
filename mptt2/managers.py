@@ -4,6 +4,7 @@ from django.db.models.query import QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
+from mptt2.enums import Position
 from mptt2.query import TreeQuerySet
 
 
@@ -16,7 +17,7 @@ class TreeManager(Manager):
     def insert_node(self,
                     node,
                     target=None,
-                    position: str = "last-child"):
+                    position: Position = Position.LAST_CHILD.value):
 
         if node.pk and self.filter(pk=node.pk).exists():
             raise ValueError(
@@ -29,17 +30,30 @@ class TreeManager(Manager):
             node.mptt_rgt = 2
             node.mptt_depth = 0
             node.parent = None
-        elif position == "last-child":
+        elif position == Position.LAST_CHILD.value:
             node.mptt_parent = target
             node.mptt_tree = target.mptt_tree
+            node.mptt_depth = target.mptt_depth + 1
             node.mptt_lft = target.mptt_rgt
             node.mptt_rgt = target.mptt_rgt + 1
-            node.mptt_depth = target.mptt_depth + 1
             with atomic():
                 self.filter(mptt_tree=F("mptt_tree"), mptt_rgt__gte=target.mptt_rgt).update(
                     mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gt=target.mptt_rgt).update(
                     mptt_lft=F("mptt_lft") + 2)
+        elif position == Position.FIRST_CHILD.value:
+            node.mptt_parent = target
+            node.mptt_tree = target.mptt_tree
+            node.mptt_depth = target.mptt_depth + 1
+            node.mptt_lft = target.mptt_lft + 1
+            node.mptt_rgt = target.mptt_lft + 2
+
+            with atomic():
+                self.filter(mptt_tree=F("mptt_tree"), mptt_rgt__gte=target.mptt_lft).update(
+                    mptt_rgt=F("mptt_rgt") + 2)
+                self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gt=target.mptt_lft).update(
+                    mptt_lft=F("mptt_lft") + 2)
+
         else:
             raise NotImplementedError("given position is not supported")
         node.save()
