@@ -9,8 +9,9 @@ from django.db.models.query import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
+from mptt2.managers import TreeManager
 from mptt2.query import (AncestorsQuery, DescendantsQuery, FamilyQuery,
-                         SiblingsQuery, TreeQuerySet)
+                         SiblingsQuery)
 
 
 class Tree(Model):
@@ -24,7 +25,7 @@ class Node(Model):
     mptt_rgt = PositiveIntegerField()
     mptt_depth = PositiveIntegerField()
 
-    objects = TreeQuerySet.as_manager()
+    objects = TreeManager()
 
     class Meta:
         abstract = True
@@ -52,6 +53,9 @@ class Node(Model):
             #     violation_error_message=_("A node with the same rgt value exists for this tree.")
             # )
         ]
+
+    def __str__(self) -> str:
+        return f"{self.mptt_tree_id} | {self.mptt_lft} | {self.mptt_rgt}"
 
     @atomic
     def delete(self, *args, **kwargs):
