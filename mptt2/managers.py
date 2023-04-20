@@ -64,7 +64,7 @@ class TreeManager(Manager):
             with atomic():
                 self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gte=target.mptt_lft).update(
                     mptt_lft=F("mptt_lft") + 2, mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(mptt_tree=F("mptt_tree"), mptt_lft=1).update(
+                self.filter(mptt_tree=F("mptt_tree"), mptt_parent=None).update(
                     mptt_rgt=F("mptt_rgt") + 2)
         elif position == Position.RIGHT.value:
             node.mptt_parent = target
