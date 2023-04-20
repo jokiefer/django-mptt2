@@ -38,65 +38,38 @@ class Node(Model):
                 name="rgt_gt_lft",
                 violation_error_message=_(
                     "The right side value rgt is allways greater than the node left side value lft."),
-                # ),
-                # UniqueConstraint(
-                #     fields=["mptt_tree_id", "mptt_lft"],
-                #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
-                #     name="unique_tree_node_lft_check",
-                #     violation_error_message=_("A node with the same lft value exists for this tree.")
-                # ),
-                # UniqueConstraint(
-                #     fields=["mptt_tree_id", "mptt_rgt"],
-                #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
-                #     name="unique_tree_node_rgt_check",
-                #     violation_error_message=_("A node with the same rgt value exists for this tree.")
             )
+            # UniqueConstraint(
+            #     fields=["mptt_tree_id", "mptt_lft"],
+            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
+            #     name="unique_tree_node_lft_check",
+            #     violation_error_message=_("A node with the same lft value exists for this tree.")
+            # ),
+            # UniqueConstraint(
+            #     fields=["mptt_tree_id", "mptt_rgt"],
+            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
+            #     name="unique_tree_node_rgt_check",
+            #     violation_error_message=_("A node with the same rgt value exists for this tree.")
+            # )
         ]
 
-    @atomic
+    @ atomic
     def delete(self, *args, **kwargs):
-
-        # updating the right tree (siblings descendants)
+        del_return = super().delete(*args, **kwargs)
         self.__class__.objects.filter(
             mptt_tree=self.mptt_tree,
-            mptt_lft__gt=self.mptt_lft,
+            mptt_lft__gt=self.mptt_rgt
+        ).update(
+            mptt_lft=F("mptt_lft") - self.subtree_with
+        )
+        self.__class__.objects.filter(
+            mptt_tree=self.mptt_tree,
             mptt_rgt__gt=self.mptt_rgt
         ).update(
-            mptt_lft=F("mptt_lft") - (1 + self.descendant_count * 2),
-            mptt_rgt=F("mptt_rgt") - (1 + self.descendant_count * 2)
+            mptt_rgt=F("mptt_rgt") - self.subtree_with
         )
 
-        # updating ancestors without parent and root
-        self.__class__.objects.filter(
-            ~Q(mptt_parent=self.mptt_parent),
-            mptt_parent__isnull=False,
-            mptt_tree=self.mptt_tree,
-            mptt_lft__lt=self.mptt_lft,
-            mptt_rgt__gt=self.mptt_rgt,
-        ).update(
-            mptt_lft=F("mptt_lft") - (1 + self.descendant_count * 2),
-            mptt_rgt=F("mptt_rgt") - (1 + self.descendant_count * 2)
-        )
-
-        # updating parent
-        self.__class__.objects.filter(
-            pk=self.mptt_parent.pk,
-            mptt_tree=self.mptt_tree
-        ).update(mptt_rgt=self.mptt_lft)
-
-        # FIXME: if rightmost child of root is deleted,
-        # the following update is duplicated
-        self.__class__.objects.filter(
-            mptt_tree=self.mptt_tree,
-            mptt_lft=1
-        ).update(
-            mptt_rgt=self.__class__.objects.filter(
-                mptt_tree=self.mptt_tree,
-                mptt_depth=1,
-            ).values_list("mptt_lft", named=True).last().mptt_lft
-        )
-
-        return super().delete(*args, **kwargs)
+        return del_return
 
     def move_to(self):
         # TODO:
@@ -125,22 +98,26 @@ class Node(Model):
             SiblingsQuery(include_self=include_self))
         return siblings.order_by("-mptt_lft") if asc else siblings
 
-    @property
+    @ property
     def is_root_node(self) -> bool:
         return self.parent is None
 
-    @property
+    @ property
     def is_leaf_node(self) -> bool:
         return (self.mptt_rgt - self.mptt_lft) // 2 == 0
 
-    @property
+    @ property
     def has_leafs(self) -> bool:
         return self.mptt_rgt - self.mptt_lft > 0
 
-    @property
+    @ property
     def descendant_count(self):
         if self.mptt_rgt is None:
             # node not saved yet
             return 0
         else:
             return (self.mptt_rgt - self.mptt_lft - 1) // 2
+
+    @ property
+    def subtree_with(self):
+        return self.mptt_rgt - self.mptt_lft + 1
