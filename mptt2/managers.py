@@ -15,7 +15,7 @@ class TreeManager(Manager):
     @atomic
     def insert_node(self,
                     node,
-                    target,
+                    target=None,
                     position: str = "last-child"):
 
         if node.pk and self.filter(pk=node.pk).exists():
