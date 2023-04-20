@@ -13,6 +13,7 @@ class TreeManager(Manager):
     def get_queryset(self) -> QuerySet[TreeQuerySet]:
         return TreeQuerySet(self.model, using=self._db)
 
+    # FIXME: code of all position checking branches could be merged with some additional logic
     @atomic
     def insert_node(self,
                     node,
@@ -75,7 +76,6 @@ class TreeManager(Manager):
                     mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(mptt_tree=F("mptt_tree"), mptt_lft__gt=target.mptt_rgt).update(
                     mptt_lft=F("mptt_lft") + 2)
-
         else:
             raise NotImplementedError("given position is not supported")
         node.save()
