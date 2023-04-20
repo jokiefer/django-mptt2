@@ -53,7 +53,7 @@ class Node(Model):
             # )
         ]
 
-    @ atomic
+    @atomic
     def delete(self, *args, **kwargs):
         del_return = super().delete(*args, **kwargs)
         self.__class__.objects.filter(
