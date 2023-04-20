@@ -14,6 +14,7 @@ class TreeManager(Manager):
         return TreeQuerySet(self.model, using=self._db)
 
     # FIXME: code of all position checking branches could be merged with some additional logic
+    # FIXME: create query object to get right sibling and there descendants
     @atomic
     def insert_node(self,
                     node,
