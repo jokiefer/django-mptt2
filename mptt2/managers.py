@@ -92,14 +92,19 @@ class TreeManager(Manager):
         nodes = self.select_for_update().filter(mptt_tree=node.mptt_tree)
 
         if position == Position.LEFT.value:
-            self.filter(
-                SameTreeQuery,
-                mptt_lft_gte=target.mptt_lft,
-                mptt_lft_lt=target.mptt_lft
 
+            # update target subtree
+            self.filter(
+                DescendantsQuery(of=target, include_self=True)
             ).update(
-                mptt_lft=F("mptt_lft") + target.subtree_with,
-                mptt_rgt=F("mptt_rgt") + target.subtree_with
+                # TODO:
+            )
+
+            # update node subtree
+            self.filter(
+                DescendantsQuery(of=node, include_self=True)
+            ).update(
+                # TODO:
             )
 
         else:
