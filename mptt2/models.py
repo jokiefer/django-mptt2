@@ -64,13 +64,13 @@ class Node(Model):
             mptt_tree=self.mptt_tree,
             mptt_lft__gt=self.mptt_rgt
         ).update(
-            mptt_lft=F("mptt_lft") - self.subtree_with
+            mptt_lft=F("mptt_lft") - self.subtree_width
         )
         self.__class__.objects.filter(
             mptt_tree=self.mptt_tree,
             mptt_rgt__gt=self.mptt_rgt
         ).update(
-            mptt_rgt=F("mptt_rgt") - self.subtree_with
+            mptt_rgt=F("mptt_rgt") - self.subtree_width
         )
 
         return del_return
@@ -123,5 +123,5 @@ class Node(Model):
             return (self.mptt_rgt - self.mptt_lft - 1) // 2
 
     @ property
-    def subtree_with(self):
+    def subtree_width(self):
         return self.mptt_rgt - self.mptt_lft + 1

@@ -32,7 +32,10 @@ class ConvertableQuery(Q):
 
 class SameTreeQuery(ConvertableQuery):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(mptt_tree=F("mptt_tree"), *args, **kwargs)
+        if "mptt_tree" in kwargs:
+            super().__init__(*args, **kwargs)
+        else:
+            super().__init__(mptt_tree=F("mptt_tree"), *args, **kwargs)
 
 
 class RootQuery(SameTreeQuery):
@@ -57,9 +60,11 @@ class ParentQuery(SameTreeQuery):
 class DescendantsQuery(SameTreeQuery):
     def __init__(self, of=None, include_self: bool = False, *args: Any, **kwargs: Any) -> None:
         query_kwargs: Dict = {
-            "mptt_lft_lte" if include_self else "mptt_lft_lt": of.mptt_lft if of else F("mptt_lft"),
-            "mptt_rgt_gte" if include_self else "mptt_rgt_gt": of.mptt_rgt if of else F("mptt_rgt"),
+            "mptt_lft__gte" if include_self else "mptt_lft__gt": of.mptt_lft if of else F("mptt_lft"),
+            "mptt_rgt__lte" if include_self else "mptt_rgt__lt": of.mptt_rgt if of else F("mptt_rgt"),
         }
+        if of:
+            query_kwargs.update({"mptt_tree": of.mptt_tree})
         super().__init__(
             *args,
             **kwargs,
@@ -70,9 +75,11 @@ class DescendantsQuery(SameTreeQuery):
 class AncestorsQuery(SameTreeQuery):
     def __init__(self, of=None, include_self: bool = False, *args: Any, **kwargs: Any) -> None:
         query_kwargs: Dict = {
-            "mptt_lft_gte" if include_self else "mptt_lft_gt": of.mptt_lft if of else F("mptt_lft"),
-            "mptt_rgt_lte" if include_self else "mptt_rgt_lt": of.mptt_rgt if of else F("mptt_rgt"),
+            "mptt_lft__lte" if include_self else "mptt_lft__lt": of.mptt_lft if of else F("mptt_lft"),
+            "mptt_rgt__gte" if include_self else "mptt_rgt__gt": of.mptt_rgt if of else F("mptt_rgt"),
         }
+        if of:
+            query_kwargs.update({"mptt_tree": of.mptt_tree})
         super().__init__(
             *args,
             **kwargs,

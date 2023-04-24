@@ -92,7 +92,7 @@ class TreeManager(Manager):
         if position == Position.LEFT.value:
 
             # update target subtree
-            target_subtree = self.filter(
+            target_subtree = self.select_for_update().filter(
                 DescendantsQuery(of=target, include_self=True)
             )
             for _node in target_subtree:
@@ -100,15 +100,17 @@ class TreeManager(Manager):
                 _node.mptt_rgt += node.subtree_width
 
             # update node subtree
-            node_subtree = self.filter(
+            node_subtree = self.select_for_update().filter(
                 DescendantsQuery(of=node, include_self=True)
             )
             for _node in node_subtree:
                 _node.mptt_lft -= target.subtree_width
                 _node.mptt_rgt -= target.subtree_width
 
-            self.bulk_update(objs=target_subtree | node_subtree, fields=[
-                             "mptt_lft", "mptt_rgt"])
+            objs = list(target_subtree) + list(node_subtree)
+
+            self.bulk_update(objs=objs, fields=[
+                "mptt_lft", "mptt_rgt"])
 
         else:
             raise NotImplementedError("given position is not supported")
