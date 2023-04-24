@@ -1,6 +1,6 @@
 from django.db.models.expressions import F
 from django.db.models.manager import Manager
-from django.db.models.query import QuerySet
+from django.db.models.query import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
@@ -40,9 +40,9 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_rgt
             node.mptt_rgt = target.mptt_rgt + 1
             with atomic():
-                self.filter(SameTreeQuery, mptt_rgt__gte=target.mptt_rgt).update(
+                self.filter(SameTreeQuery(mptt_rgt__gte=target.mptt_rgt)).update(
                     mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(SameTreeQuery, mptt_lft__gt=target.mptt_rgt).update(
+                self.filter(SameTreeQuery(mptt_lft__gt=target.mptt_rgt)).update(
                     mptt_lft=F("mptt_lft") + 2)
         elif position == Position.FIRST_CHILD.value:
             node.mptt_parent = target
@@ -52,9 +52,9 @@ class TreeManager(Manager):
             node.mptt_rgt = target.mptt_lft + 2
 
             with atomic():
-                self.filter(SameTreeQuery, mptt_rgt__gte=target.mptt_lft).update(
+                self.filter(SameTreeQuery(mptt_rgt__gte=target.mptt_lft)).update(
                     mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(SameTreeQuery, mptt_lft__gt=target.mptt_lft).update(
+                self.filter(SameTreeQuery(mptt_lft__gt=target.mptt_lft)).update(
                     mptt_lft=F("mptt_lft") + 2)
         elif position == Position.LEFT.value:
             node.mptt_parent = target
@@ -63,9 +63,9 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_lft
             node.mptt_rgt = target.mptt_lft + 1
             with atomic():
-                self.filter(SameTreeQuery, mptt_lft__gte=target.mptt_lft).update(
+                self.filter(SameTreeQuery(mptt_lft__gte=target.mptt_lft)).update(
                     mptt_lft=F("mptt_lft") + 2, mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(SameTreeQuery, mptt_parent=None).update(
+                self.filter(RootQuery()).update(
                     mptt_rgt=F("mptt_rgt") + 2)
         elif position == Position.RIGHT.value:
             node.mptt_parent = target
@@ -74,9 +74,9 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_rgt + 1
             node.mptt_rgt = target.mptt_rgt + 2
             with atomic():
-                self.filter(SameTreeQuery, mptt_rgt__gt=target.mptt_rgt).update(
+                self.filter(SameTreeQuery(mptt_rgt__gt=target.mptt_rgt)).update(
                     mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(SameTreeQuery, mptt_lft__gt=target.mptt_rgt).update(
+                self.filter(SameTreeQuery(mptt_lft__gt=target.mptt_rgt)).update(
                     mptt_lft=F("mptt_lft") + 2)
         else:
             raise NotImplementedError("given position is not supported")
@@ -89,23 +89,26 @@ class TreeManager(Manager):
                   target,
                   position=Position.LAST_CHILD.value,
                   ):
-        nodes = self.select_for_update().filter(mptt_tree=node.mptt_tree)
-
         if position == Position.LEFT.value:
 
             # update target subtree
-            self.filter(
+            target_subtree = self.filter(
                 DescendantsQuery(of=target, include_self=True)
-            ).update(
-                # TODO:
             )
+            for _node in target_subtree:
+                _node.mptt_lft += node.subtree_width
+                _node.mptt_rgt += node.subtree_width
 
             # update node subtree
-            self.filter(
+            node_subtree = self.filter(
                 DescendantsQuery(of=node, include_self=True)
-            ).update(
-                # TODO:
             )
+            for _node in node_subtree:
+                _node.mptt_lft -= target.subtree_width
+                _node.mptt_rgt -= target.subtree_width
+
+            self.bulk_update(objs=target_subtree | node_subtree, fields=[
+                             "mptt_lft", "mptt_rgt"])
 
         else:
             raise NotImplementedError("given position is not supported")
