@@ -100,8 +100,8 @@ class ChildrenQuery(DescendantsQuery):
 
 
 class SiblingsQuery(ConvertableQuery):
-    def __init__(self, include_self: bool = False, *args: Any, **kwargs: Any) -> None:
-        super().__init__(parent=F("parent"), *args, **kwargs)
+    def __init__(self, of=None, include_self: bool = False, *args: Any, **kwargs: Any) -> None:
+        super().__init__(parent=of.parent if of else F("parent"), *args, **kwargs)
         if not include_self:
             self.add(data=~ConvertableQuery(pk=F("pk")), conn_type=self.AND)
 

@@ -89,8 +89,14 @@ class TreeManager(Manager):
                   target,
                   position=Position.LAST_CHILD.value,
                   ):
-        if position == Position.LEFT.value:
+        if node.mptt_tree != target.mptt_tree:
+            raise NotImplementedError(
+                "moving nodes between trees is not implemented")
 
+        elif position == Position.LEFT.value:
+            if target.mptt_lft - node.mptt_rgt == 1:
+                # do nothing. Given node is the left sibling of the given target.
+                return
             # update target subtree
             target_subtree = self.select_for_update().filter(
                 DescendantsQuery(of=target, include_self=True)
@@ -111,6 +117,33 @@ class TreeManager(Manager):
 
             self.bulk_update(objs=objs, fields=[
                 "mptt_lft", "mptt_rgt"])
+
+        elif position == Position.RIGHT.value:
+            if node.mptt_lft - target.mptt_rgt == 1:
+                # do nothing. Given node is the right sibling of the given target.
+                return
+            right_subtrees_width = target.mptt_rgt - node.mptt_lft + 1
+
+            # update target subtree
+            siblings_with_descendants = self.select_for_update().filter(
+                mptt_lft__gt=node.mptt_lft,
+                mptt_rgt__lte=target.mptt_rgt
+            )
+            for _node in siblings_with_descendants:
+                _node.mptt_lft -= node.subtree_width
+                _node.mptt_rgt -= node.subtree_width
+
+            # update node subtree
+            node_subtree = self.select_for_update().filter(
+                DescendantsQuery(of=node, include_self=True)
+            )
+            for _node in node_subtree:
+                _node.mptt_lft += right_subtrees_width - node.subtree_width
+                _node.mptt_rgt += right_subtrees_width - node.subtree_width
+
+            objs = list(node_subtree) + list(siblings_with_descendants)
+
+            self.bulk_update(objs=objs, fields=["mptt_lft", "mptt_rgt"])
 
         else:
             raise NotImplementedError("given position is not supported")

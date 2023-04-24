@@ -366,3 +366,69 @@ class TestTreeManager(TestCase):
         self.assertEqual(recalculated_tree[10].mptt_lft, 19)
         self.assertEqual(recalculated_tree[10].mptt_rgt, 20)
         self.assertEqual(recalculated_tree[10].mptt_depth, 2)
+
+    def test_move_right(self):
+        SimpleNode.objects.move_node(
+            node=SimpleNode.objects.get(pk="12"),
+            target=SimpleNode.objects.get(pk="17"),
+            position=Position.RIGHT.value
+        )
+
+        recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
+
+        self.assertEqual(recalculated_tree.count(), 11)
+
+        self.assertEqual(recalculated_tree[0].pk, 11)
+        self.assertEqual(recalculated_tree[0].mptt_lft, 1)
+        self.assertEqual(recalculated_tree[0].mptt_rgt, 22)
+        self.assertEqual(recalculated_tree[0].mptt_depth, 0)
+
+        self.assertEqual(recalculated_tree[1].pk, 14)
+        self.assertEqual(recalculated_tree[1].mptt_lft, 2)
+        self.assertEqual(recalculated_tree[1].mptt_rgt, 7)
+        self.assertEqual(recalculated_tree[1].mptt_depth, 1)
+
+        self.assertEqual(recalculated_tree[2].pk, 15)
+        self.assertEqual(recalculated_tree[2].mptt_lft, 3)
+        self.assertEqual(recalculated_tree[2].mptt_rgt, 4)
+        self.assertEqual(recalculated_tree[2].mptt_depth, 2)
+
+        self.assertEqual(recalculated_tree[3].pk, 16)
+        self.assertEqual(recalculated_tree[3].mptt_lft, 5)
+        self.assertEqual(recalculated_tree[3].mptt_rgt, 6)
+        self.assertEqual(recalculated_tree[3].mptt_depth, 2)
+
+        self.assertEqual(recalculated_tree[4].pk, 17)
+        self.assertEqual(recalculated_tree[4].mptt_lft, 8)
+        self.assertEqual(recalculated_tree[4].mptt_rgt, 17)
+        self.assertEqual(recalculated_tree[4].mptt_depth, 1)
+
+        self.assertEqual(recalculated_tree[5].pk, 18)
+        self.assertEqual(recalculated_tree[5].mptt_lft, 9)
+        self.assertEqual(recalculated_tree[5].mptt_rgt, 12)
+        self.assertEqual(recalculated_tree[5].mptt_depth, 2)
+
+        self.assertEqual(recalculated_tree[6].pk, 19)
+        self.assertEqual(recalculated_tree[6].mptt_lft, 10)
+        self.assertEqual(recalculated_tree[6].mptt_rgt, 11)
+        self.assertEqual(recalculated_tree[6].mptt_depth, 3)
+
+        self.assertEqual(recalculated_tree[7].pk, 20)
+        self.assertEqual(recalculated_tree[7].mptt_lft, 13)
+        self.assertEqual(recalculated_tree[7].mptt_rgt, 16)
+        self.assertEqual(recalculated_tree[7].mptt_depth, 2)
+
+        self.assertEqual(recalculated_tree[8].pk, 21)
+        self.assertEqual(recalculated_tree[8].mptt_lft, 14)
+        self.assertEqual(recalculated_tree[8].mptt_rgt, 15)
+        self.assertEqual(recalculated_tree[8].mptt_depth, 3)
+
+        self.assertEqual(recalculated_tree[9].pk, 12)
+        self.assertEqual(recalculated_tree[9].mptt_lft, 18)
+        self.assertEqual(recalculated_tree[9].mptt_rgt, 21)
+        self.assertEqual(recalculated_tree[9].mptt_depth, 1)
+
+        self.assertEqual(recalculated_tree[10].pk, 13)
+        self.assertEqual(recalculated_tree[10].mptt_lft, 19)
+        self.assertEqual(recalculated_tree[10].mptt_rgt, 20)
+        self.assertEqual(recalculated_tree[10].mptt_depth, 2)
