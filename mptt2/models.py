@@ -55,7 +55,7 @@ class Node(Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.mptt_tree_id} | {self.mptt_lft} | {self.mptt_rgt}"
+        return f"pk {self.pk} | tree {self.mptt_tree_id} | lft {self.mptt_lft} | rgt {self.mptt_rgt}"
 
     @atomic
     def delete(self, *args, **kwargs):

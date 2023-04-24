@@ -145,5 +145,50 @@ class TreeManager(Manager):
 
             self.bulk_update(objs=objs, fields=["mptt_lft", "mptt_rgt"])
 
+        elif position == Position.FIRST_CHILD.value:
+            if node.mptt_lft - target.mptt_lft == 1:
+                # do nothing. Given node is already the first child of the target.
+                return
+            jump_width = node.mptt_lft - target.mptt_lft - 1
+
+            node_subtree = self.select_for_update().filter(
+                DescendantsQuery(of=node, include_self=True)
+            )
+
+            depth_base = None
+            for _node in node_subtree:
+                if not depth_base:
+                    level_increment_base = node.mptt_depth + target.mptt_depth - 1
+                    _node.mptt_parent = target
+
+                _node.mptt_depth += level_increment_base
+                _node.mptt_lft -= jump_width
+                _node.mptt_rgt -= jump_width
+
+            target_subtree = self.select_for_update().filter(
+                DescendantsQuery(of=target, include_self=True)
+            )
+
+            for _node in target_subtree:
+                # skip incrementing lft of target
+                _node.mptt_lft += node.subtree_width if _node.mptt_lft != target.mptt_lft else 0
+                _node.mptt_rgt += node.subtree_width
+
+            node_left_side_siblings_with_descendants = self.select_for_update().filter(
+                mptt_lft__gt=target.mptt_rgt,
+                mptt_rgt__lt=node.mptt_lft,
+            )
+
+            for _node in node_left_side_siblings_with_descendants:
+                _node.mptt_lft += node.subtree_width + 1
+                _node.mptt_rgt += node.subtree_width + 1
+
+            objs = list(node_subtree) + \
+                list(node_left_side_siblings_with_descendants) + \
+                list(target_subtree)
+
+            self.bulk_update(objs=objs, fields=[
+                             "mptt_depth", "mptt_lft", "mptt_rgt", "mptt_parent"])
+
         else:
             raise NotImplementedError("given position is not supported")
