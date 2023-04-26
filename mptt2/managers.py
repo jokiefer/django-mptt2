@@ -155,9 +155,9 @@ class TreeManager(Manager):
                 DescendantsQuery(of=node, include_self=True)
             )
 
-            depth_base = None
+            level_increment_base = None
             for _node in node_subtree:
-                if not depth_base:
+                if level_increment_base == None:
                     level_increment_base = 0 if node.mptt_depth - \
                         target.mptt_depth == 1 else node.mptt_depth - target.mptt_depth - 1
                     _node.mptt_parent = target
@@ -205,9 +205,9 @@ class TreeManager(Manager):
             node_subtree = self.select_for_update().filter(
                 DescendantsQuery(of=node, include_self=True)
             )
-            depth_base = None
+            level_increment_base = None
             for _node in node_subtree:
-                if not depth_base:
+                if level_increment_base == None:
                     level_increment_base = 0 if node.mptt_depth - \
                         target.mptt_depth == 1 else node.mptt_depth - target.mptt_depth - 1
                     _node.mptt_parent = target
@@ -227,7 +227,6 @@ class TreeManager(Manager):
                 _node.mptt_lft += node.subtree_width if _node.mptt_lft >= target.mptt_rgt else 0
                 _node.mptt_rgt += node.subtree_width if _node.mptt_rgt <= node.mptt_rgt else 0
 
-            print(target_with_right_side_siblings_with_descendants)
             objs = list(node_subtree) + \
                 list(target_with_right_side_siblings_with_descendants)
 
