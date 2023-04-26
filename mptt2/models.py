@@ -104,8 +104,13 @@ class Node(Model):
     def get_root(self):
         return self.objects.get(RootQuery(of=self))
 
-    def move_to(self, target, position: Position = Position.LAST_CHILD.value):
-        self.objects.move_node(node=self, target=target, position=position)
+    def move_to(self, target, position: Position = Position.LAST_CHILD):
+        self.objects.move_node(node=self, target=target,
+                               position=position.value)
+
+    def insert_at(self, target, position: Position = Position.LAST_CHILD):
+        self.objects.insert_node(
+            node=self, target=target, position=position.value)
 
     @ property
     def is_root_node(self) -> bool:
