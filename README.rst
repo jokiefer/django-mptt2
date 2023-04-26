@@ -1,10 +1,10 @@
 django-mptt2
 ============
-Based on the idea of the unmaintained [django-mptt](https://github.com/django-mptt/django-mptt) package i implemented this new code base to replace it.
+Based on the idea of the unmaintained `django-mptt <https://github.com/django-mptt/django-mptt>`_ package i implemented this new code base to replace it.
 
 Cause no other package fits all of my use cases, which are primary in fast reading tree's from the database, i started working on this project.
 
-There is an alternative to this package, called [django-treebeard](https://pypi.org/project/django-treebeard/), which implements nested sets as well, but without a parent foreignkey.
+There is an alternative to this package, called `django-treebeard <https://pypi.org/project/django-treebeard/>`_, which implements nested sets as well, but without a parent foreignkey.
 
 
 Usage
@@ -13,7 +13,7 @@ Usage
 Install it as any other django app to your project:
 
 .. code-block:: bash
-    
+
     $ pip install django-mptt2
 
 Add `django-mptt2` to `INSTALLED_APPS`:
