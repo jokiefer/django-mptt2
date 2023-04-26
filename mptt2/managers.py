@@ -56,7 +56,7 @@ class TreeManager(Manager):
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_lft).update(
                     mptt_lft=F("mptt_lft") + 2)
         elif position == Position.LEFT.value:
-            node.mptt_parent = target
+            node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth
             node.mptt_lft = target.mptt_lft
@@ -67,7 +67,7 @@ class TreeManager(Manager):
                 self.filter(RootQuery(mptt_tree=node.mptt_tree,)).update(
                     mptt_rgt=F("mptt_rgt") + 2)
         elif position == Position.RIGHT.value:
-            node.mptt_parent = target
+            node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth
             node.mptt_lft = target.mptt_rgt + 1
