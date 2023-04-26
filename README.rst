@@ -13,11 +13,13 @@ Usage
 Install it as any other django app to your project:
 
 .. code-block:: bash
+    
     $ pip install django-mptt2
 
 Add `django-mptt2` to `INSTALLED_APPS`:
 
 .. code-block:: python
+
     INSTALLED_APPS = [
         # other apps
         "mptt2"
@@ -26,6 +28,7 @@ Add `django-mptt2` to `INSTALLED_APPS`:
 Inheritance from the abstract `mptt2.models.Node` Model:
 
 .. code-block:: python
+
     from django.db import models
     from mptt2.models import 
     
