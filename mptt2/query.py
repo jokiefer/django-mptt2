@@ -35,6 +35,7 @@ class SameTreeQuery(ConvertableQuery):
         if "mptt_tree" in kwargs:
             super().__init__(*args, **kwargs)
         else:
+            # FIXME: does not take any effect, a concrete tree object (pk) is needed to filter it correctly
             super().__init__(mptt_tree=F("mptt_tree"), *args, **kwargs)
 
 
