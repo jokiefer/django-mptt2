@@ -35,26 +35,39 @@ class SameTreeQuery(ConvertableQuery):
         if "mptt_tree" in kwargs:
             super().__init__(*args, **kwargs)
         else:
-            # FIXME: does not take any effect, a concrete tree object (pk) is needed to filter it correctly
             super().__init__(mptt_tree=F("mptt_tree"), *args, **kwargs)
 
 
 class RootQuery(SameTreeQuery):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, of=None, *args: Any, **kwargs: Any) -> None:
+        init_kwargs: Dict = {
+            "mptt_parent": None,
+        }
+        if of:
+            init_kwargs.update({"mptt_tree": of.mptt_tree})
         super().__init__(
-            mptt_parent=None,
             *args,
-            **kwargs
+            **kwargs,
+            **init_kwargs
         )
 
 
 class ParentQuery(SameTreeQuery):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, of=None, *args: Any, **kwargs: Any) -> None:
+        init_kwargs: Dict = {
+            "mptt_lft": F("mptt_lft") - 1,
+            "mptt_rgt": F("mptt_rgt") + 1,
+        }
+        if of:
+            init_kwargs.update({
+                "mptt_tree": of.mptt_tree,
+                "mptt_lft": of.mptt_lft - 1,
+                "mptt_rgt": of.mptt_rgt + 1,
+            })
         super().__init__(
-            mptt_lft=F("mptt_lft") - 1,
-            mptt_rgt=F("mptt_rgt") + 1,
             *args,
-            **kwargs
+            **kwargs,
+            **init_kwargs
         )
 
 

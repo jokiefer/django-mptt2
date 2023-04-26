@@ -9,9 +9,10 @@ from django.db.models.query import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
+from mptt2.enums import Position
 from mptt2.managers import TreeManager
-from mptt2.query import (AncestorsQuery, DescendantsQuery, FamilyQuery,
-                         SiblingsQuery)
+from mptt2.query import (AncestorsQuery, ChildrenQuery, DescendantsQuery,
+                         FamilyQuery, RootQuery, SiblingsQuery)
 
 
 class Tree(Model):
@@ -75,32 +76,35 @@ class Node(Model):
 
         return del_return
 
-    def move_to(self):
-        # TODO:
-        pass
+    def get_children(self, asc=False) -> QuerySet:
+        children = self.objects.filter(ChildrenQuery(of=self))
+        return children.order_by("-mptt_lft") if asc else children
 
     def get_descendants(self, include_self=False, asc=False) -> QuerySet:
-        # FIXME: not based on the current node
         descendants = self.objects.filter(
-            DescendantsQuery(include_self=include_self))
+            DescendantsQuery(of=self, include_self=include_self))
         return descendants.order_by("-mptt_lft") if asc else descendants
 
     def get_ancestors(self, include_self=False, asc=False) -> QuerySet:
-        # FIXME: not based on the current node
         ancestors = self.objects.filter(
-            AncestorsQuery(include_self=include_self))
+            AncestorsQuery(of=self, include_self=include_self))
         return ancestors.order_by("-mptt_lft") if asc else ancestors
 
     def get_family(self, include_self=False, asc=False) -> QuerySet:
-        # FIXME: not based on the current node
-        family = self.objects.filter(FamilyQuery(include_self=include_self))
+        family = self.objects.filter(FamilyQuery(
+            of=self, include_self=include_self))
         return family.order_by("-mptt_lft") if asc else family
 
     def get_siblings(self, include_self=False, asc=False) -> QuerySet:
-        # FIXME: not based on the current node
         siblings = self.objects.filter(
-            SiblingsQuery(include_self=include_self))
+            SiblingsQuery(of=self, include_self=include_self))
         return siblings.order_by("-mptt_lft") if asc else siblings
+
+    def get_root(self):
+        return self.objects.get(RootQuery(of=self))
+
+    def move_to(self, target, position: Position = Position.LAST_CHILD.value):
+        self.objects.move_node(node=self, target=target, position=position)
 
     @ property
     def is_root_node(self) -> bool:
