@@ -20,7 +20,8 @@ class Tree(Model):
 
 
 class Node(Model):
-    mptt_parent = ForeignKey(to="self", on_delete=CASCADE, null=True)
+    mptt_parent = ForeignKey(to="self", on_delete=CASCADE, null=True,
+                             related_name="chilren", related_query_name="child")
     mptt_tree = ForeignKey(to=Tree, on_delete=CASCADE)
     mptt_lft = PositiveIntegerField()
     mptt_rgt = PositiveIntegerField()
