@@ -2,7 +2,8 @@ from enum import Enum
 
 
 class Position(Enum):
-    LAST_CHILD = "last-child"
-    FIRST_CHILD = "first-child"
-    LEFT = "left"
-    RIGHT = "right"
+    """Simple enum to provide pre defined position choices"""
+    LAST_CHILD: str = "last-child"
+    FIRST_CHILD: str = "first-child"
+    LEFT: str = "left"
+    RIGHT: str = "right"

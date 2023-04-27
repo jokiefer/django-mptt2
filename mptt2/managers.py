@@ -234,6 +234,7 @@ class TreeManager(Manager):
                 objs=objs,
                 fields=["mptt_depth", "mptt_lft", "mptt_rgt", "mptt_parent"]
             )
+            return node.refresh_from_db()
 
         else:
             raise NotImplementedError("given position is not supported")

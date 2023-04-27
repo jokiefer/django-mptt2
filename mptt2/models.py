@@ -16,16 +16,62 @@ from mptt2.query import (AncestorsQuery, ChildrenQuery, DescendantsQuery,
 
 
 class Tree(Model):
+    """Simple Tree model to generate simple tree id's by the database to support thread safe inserting new tree's"""
     pass
 
 
 class Node(Model):
-    mptt_parent = ForeignKey(to="self", on_delete=CASCADE, null=True,
-                             related_name="chilren", related_query_name="child")
-    mptt_tree = ForeignKey(to=Tree, on_delete=CASCADE)
-    mptt_lft = PositiveIntegerField()
-    mptt_rgt = PositiveIntegerField()
-    mptt_depth = PositiveIntegerField()
+    """Abstract MPTT Node model, which implements all needed fields for nested sets.
+
+    :param mptt_parent: A foreignkey to the parent node. None means it is the root node of a tree.
+    :type mptt_parent: `ForeignKey <https://docs.djangoproject.com/en/4.2/ref/models/fields/#django.db.models.ForeignKey>`_, optional
+
+    :param mptt_tree: A foreignkey to a unique tree object to differ between different trees.
+    :type mptt_tree: ForeignKey
+
+    :param mptt_lft: The left value of the node
+    :type mptt_lft: int
+
+    :param mptt_rgt: The right value of the node
+    :type mptt_rgt: int
+
+    :param mptt_depth: The hierarchy level of this node inside the tree
+    :type mptt_depth: int
+
+    """
+    mptt_parent = ForeignKey(
+        to="self",
+        on_delete=CASCADE,
+        null=True,
+        related_name="chilren",
+        related_query_name="child",
+        editable=False,
+        verbose_name=_("parent"),
+        help_text=_("The parent of this node"),
+    )
+    mptt_tree = ForeignKey(
+        to=Tree,
+        on_delete=CASCADE,
+        verbose_name=_("tree"),
+        help_text=_("The unique tree, where this node is part of"),
+        related_name="nodes",
+        related_query_name="node"
+    )
+    mptt_lft = PositiveIntegerField(
+        editable=False,
+        verbose_name=_("left"),
+        help_text=_("The left value of the node")
+    )
+    mptt_rgt = PositiveIntegerField(
+        editable=False,
+        verbose_name=_("right"),
+        help_text=_("The right value of the node")
+    )
+    mptt_depth: int = PositiveIntegerField(
+        editable=False,
+        verbose_name=_("depth"),
+        help_text=_("The hierarchy level of this node inside the tree")
+    )
 
     objects = TreeManager()
 
@@ -42,25 +88,15 @@ class Node(Model):
                 violation_error_message=_(
                     "The right side value rgt is allways greater than the node left side value lft."),
             )
-            # UniqueConstraint(
-            #     fields=["mptt_tree_id", "mptt_lft"],
-            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
-            #     name="unique_tree_node_lft_check",
-            #     violation_error_message=_("A node with the same lft value exists for this tree.")
-            # ),
-            # UniqueConstraint(
-            #     fields=["mptt_tree_id", "mptt_rgt"],
-            #     # condition=Q(mptt_tree__mptt_tree_update__istrue=False), --> django.core.exceptions.FieldError: Joined field references are not permitted in this query
-            #     name="unique_tree_node_rgt_check",
-            #     violation_error_message=_("A node with the same rgt value exists for this tree.")
-            # )
         ]
 
     def __str__(self) -> str:
+        """returns pk | tree | lft | rgt"""
         return f"pk {self.pk} | tree {self.mptt_tree_id} | lft {self.mptt_lft} | rgt {self.mptt_rgt}"
 
     @atomic
     def delete(self, *args, **kwargs):
+        """Custom delete function to update nested set values if a node and there descendants are deleted."""
         del_return = super().delete(*args, **kwargs)
         self.__class__.objects.filter(
             mptt_tree=self.mptt_tree,
@@ -78,54 +114,131 @@ class Node(Model):
         return del_return
 
     def get_children(self, asc=False) -> QuerySet:
+        """returns a queryset representing the children of the current node
+
+        :param asc: switch to sort the queryset ascending
+        :type asc: bool
+
+        """
         children = self.objects.filter(ChildrenQuery(of=self))
         return children.order_by("-mptt_lft") if asc else children
 
     def get_descendants(self, include_self=False, asc=False) -> QuerySet:
+        """returns a queryset representing the descendants of the current node
+
+        :param asc: switch to include the current node with the queryset
+        :type asc: bool
+
+        :param asc: switch to sort the queryset ascending
+        :type asc: bool
+
+        """
         descendants = self.objects.filter(
             DescendantsQuery(of=self, include_self=include_self))
         return descendants.order_by("-mptt_lft") if asc else descendants
 
     def get_ancestors(self, include_self=False, asc=False) -> QuerySet:
+        """returns a queryset representing the ancestors of the current node
+
+        :param asc: switch to include the current node with the queryset
+        :type asc: bool
+
+        :param asc: switch to sort the queryset ascending
+        :type asc: bool
+
+        """
         ancestors = self.objects.filter(
             AncestorsQuery(of=self, include_self=include_self))
         return ancestors.order_by("-mptt_lft") if asc else ancestors
 
     def get_family(self, include_self=False, asc=False) -> QuerySet:
+        """returns a queryset representing the family of the current node (descendants and ancestors)
+
+        :param asc: switch to include the current node with the queryset
+        :type asc: bool
+
+        :param asc: switch to sort the queryset ascending
+        :type asc: bool
+
+        """
         family = self.objects.filter(FamilyQuery(
             of=self, include_self=include_self))
         return family.order_by("-mptt_lft") if asc else family
 
     def get_siblings(self, include_self=False, asc=False) -> QuerySet:
+        """returns a queryset representing siblings of the current node
+
+        :param asc: switch to include the current node with the queryset
+        :type asc: bool
+
+        :param asc: switch to sort the queryset ascending
+        :type asc: bool
+
+        """
         siblings = self.objects.filter(
             SiblingsQuery(of=self, include_self=include_self))
         return siblings.order_by("-mptt_lft") if asc else siblings
 
     def get_root(self):
+        """returns the root node of the tree where this node is part of"""
         return self.objects.get(RootQuery(of=self))
 
     def move_to(self, target, position: Position = Position.LAST_CHILD):
-        self.objects.move_node(node=self, target=target,
-                               position=position.value)
+        """Tree function to move this node to a given target relative by the given position
+
+        :param target: The target node where the given node shall be inserted relative to.
+        :type target: :class:`mptt2.models.Node`
+
+        :param position: The relative position to the target
+                         (Default: ``Position.LAST_CHILD``)
+        :type target: :class:`mptt2.enums.Position`, optional
+
+        :returns: the inserted node it self
+        :rtype: :class:`mptt2.models.Node`
+        """
+        return self.objects.move_node(
+            node=self,
+            target=target,
+            position=position.value
+        )
 
     def insert_at(self, target, position: Position = Position.LAST_CHILD):
-        self.objects.insert_node(
-            node=self, target=target, position=position.value)
+        """Tree function to insert this node to a given target relative by the given position
+
+        :param target: The target node where the given node shall be inserted relative to.
+        :type target: :class:`mptt2.models.Node`
+
+        :param position: The relative position to the target
+                         (Default: ``Position.LAST_CHILD``)
+        :type target: :class:`mptt2.enums.Position`, optional
+
+        :returns: the inserted node it self
+        :rtype: :class:`mptt2.models.Node`
+        """
+        return self.objects.insert_node(
+            node=self,
+            target=target,
+            position=position.value
+        )
 
     @ property
     def is_root_node(self) -> bool:
+        """returns True if this is the root of the tree"""
         return self.parent is None
 
     @ property
     def is_leaf_node(self) -> bool:
+        """returns true if this is a leaf node without children"""
         return (self.mptt_rgt - self.mptt_lft) // 2 == 0
 
     @ property
     def has_leafs(self) -> bool:
+        """returns true if this node has leafs (descendants)"""
         return self.mptt_rgt - self.mptt_lft > 0
 
     @ property
-    def descendant_count(self):
+    def descendant_count(self) -> int:
+        """returns the descendant count"""
         if self.mptt_rgt is None:
             # node not saved yet
             return 0
@@ -133,5 +246,6 @@ class Node(Model):
             return (self.mptt_rgt - self.mptt_lft - 1) // 2
 
     @ property
-    def subtree_width(self):
+    def subtree_width(self) -> int:
+        """returns the width of the left and right attribute which are used from descendants"""
         return self.mptt_rgt - self.mptt_lft + 1
