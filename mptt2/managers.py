@@ -20,7 +20,7 @@ class TreeManager(Manager):
     def insert_node(self,
                     node,
                     target=None,
-                    position: Position = Position.LAST_CHILD.value):
+                    position: Position = Position.LAST_CHILD):
         """Tree function to insert this node to a given target relative by the given position
 
         :param target: The target node where the given node shall be inserted relative to.
@@ -45,7 +45,7 @@ class TreeManager(Manager):
             node.mptt_rgt = 2
             node.mptt_depth = 0
             node.parent = None
-        elif position == Position.LAST_CHILD.value:
+        elif position == Position.LAST_CHILD:
             node.mptt_parent = target
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth + 1
@@ -56,7 +56,7 @@ class TreeManager(Manager):
                     mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_rgt).update(
                     mptt_lft=F("mptt_lft") + 2)
-        elif position == Position.FIRST_CHILD.value:
+        elif position == Position.FIRST_CHILD:
             node.mptt_parent = target
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth + 1
@@ -68,7 +68,7 @@ class TreeManager(Manager):
                     mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_lft).update(
                     mptt_lft=F("mptt_lft") + 2)
-        elif position == Position.LEFT.value:
+        elif position == Position.LEFT:
             node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth
@@ -79,7 +79,7 @@ class TreeManager(Manager):
                     mptt_lft=F("mptt_lft") + 2, mptt_rgt=F("mptt_rgt") + 2)
                 self.filter(RootQuery(mptt_tree=node.mptt_tree,)).update(
                     mptt_rgt=F("mptt_rgt") + 2)
-        elif position == Position.RIGHT.value:
+        elif position == Position.RIGHT:
             node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
             node.mptt_depth = target.mptt_depth
@@ -99,7 +99,7 @@ class TreeManager(Manager):
     def move_node(self,
                   node,
                   target,
-                  position=Position.LAST_CHILD.value):
+                  position=Position.LAST_CHILD):
         """Tree function to move a node relative to a given target by the given position
 
         :param target: The target node where the given node shall be inserted relative to.
@@ -117,7 +117,7 @@ class TreeManager(Manager):
             raise InvalidMove(
                 "moving nodes between trees is not supported")
 
-        elif position == Position.LEFT.value:
+        elif position == Position.LEFT:
             if target.mptt_lft - node.mptt_rgt == 1:
                 # do nothing. Given node is the left sibling of the given target.
                 return
@@ -142,7 +142,7 @@ class TreeManager(Manager):
             self.bulk_update(objs=objs, fields=[
                 "mptt_lft", "mptt_rgt"])
 
-        elif position == Position.RIGHT.value:
+        elif position == Position.RIGHT:
             if node.mptt_lft - target.mptt_rgt == 1:
                 # do nothing. Given node is the right sibling of the given target.
                 return
@@ -170,7 +170,7 @@ class TreeManager(Manager):
 
             self.bulk_update(objs=objs, fields=["mptt_lft", "mptt_rgt"])
 
-        elif position == Position.FIRST_CHILD.value:
+        elif position == Position.FIRST_CHILD:
             if node.mptt_lft - target.mptt_lft == 1:
                 # do nothing. Given node is already the first child of the target.
                 return
@@ -221,7 +221,7 @@ class TreeManager(Manager):
                 fields=["mptt_depth", "mptt_lft", "mptt_rgt", "mptt_parent"]
             )
 
-        elif position == Position.LAST_CHILD.value:
+        elif position == Position.LAST_CHILD:
             if node.mptt_rgt - target.mptt_rgt == 1:
                 # do nothing. Given node is already the last child of the target
                 return

@@ -199,7 +199,7 @@ class Node(Model):
         return self.objects.move_node(
             node=self,
             target=target,
-            position=position.value
+            position=position
         )
 
     def insert_at(self, target, position: Position = Position.LAST_CHILD):
@@ -218,7 +218,7 @@ class Node(Model):
         return self.objects.insert_node(
             node=self,
             target=target,
-            position=position.value
+            position=position
         )
 
     @ property

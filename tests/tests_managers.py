@@ -118,7 +118,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.insert_node(
             node=SimpleNode(),
             target=SimpleNode.objects.get(pk="14"),
-            position=Position.FIRST_CHILD.value
+            position=Position.FIRST_CHILD
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -212,7 +212,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.insert_node(
             node=SimpleNode(),
             target=SimpleNode.objects.get(pk="14"),
-            position=Position.LEFT.value
+            position=Position.LEFT
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -306,7 +306,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.insert_node(
             node=SimpleNode(),
             target=SimpleNode.objects.get(pk="14"),
-            position=Position.RIGHT.value
+            position=Position.RIGHT
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -400,7 +400,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.move_node(
             node=SimpleNode.objects.get(pk="17"),
             target=SimpleNode.objects.get(pk="14"),
-            position=Position.LEFT.value
+            position=Position.LEFT
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -487,7 +487,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.move_node(
             node=SimpleNode.objects.get(pk="12"),
             target=SimpleNode.objects.get(pk="17"),
-            position=Position.RIGHT.value
+            position=Position.RIGHT
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -574,7 +574,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.move_node(
             node=SimpleNode.objects.get(pk="14"),
             target=SimpleNode.objects.get(pk="12"),
-            position=Position.FIRST_CHILD.value
+            position=Position.FIRST_CHILD
         )
 
         recalculated_tree = SimpleNode.objects.filter(mptt_tree__pk=2)
@@ -661,7 +661,7 @@ class TestTreeManager(TestCase):
         SimpleNode.objects.move_node(
             node=SimpleNode.objects.get(pk="18"),
             target=SimpleNode.objects.get(pk="12"),
-            position=Position.LAST_CHILD.value
+            position=Position.LAST_CHILD
         )
 
         recalculated_tree: List[SimpleNode] = SimpleNode.objects.filter(
