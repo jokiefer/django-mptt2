@@ -1,12 +1,15 @@
+from django.db.models import Case, F, Value, When
 from django.db.models.expressions import F
+from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
-from django.db.models.query import QuerySet
+from django.db.models.query import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
 from mptt2.enums import Position
 from mptt2.exceptions import InvalidMove
-from mptt2.query import DescendantsQuery, RootQuery, TreeQuerySet
+from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
+                         RootQuery, SameNodeQuery, TreeQuerySet)
 
 
 class TreeManager(Manager):
@@ -52,10 +55,21 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_rgt
             node.mptt_rgt = target.mptt_rgt + 1
             with atomic():
-                self.filter(mptt_tree=node.mptt_tree, mptt_rgt__gte=target.mptt_rgt).update(
-                    mptt_rgt=F("mptt_rgt") + 2)
-                self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_rgt).update(
-                    mptt_lft=F("mptt_lft") + 2)
+                self.filter(
+                    RootQuery(of=target) |
+                    RightSiblingsWithDescendants(of=target, include_self=True)
+                ).update(
+                    mptt_lft=Case(
+                        When(
+                            condition=~RootQuery(of=target) &
+                            ~SameNodeQuery(of=target),
+                            then=F("mptt_lft") + 2
+                        ),
+                        default=F("mptt_lft"),
+                        output_field=PositiveIntegerField()
+                    ),
+                    mptt_rgt=F("mptt_rgt") + 2
+                )
         elif position == Position.FIRST_CHILD:
             node.mptt_parent = target
             node.mptt_tree = target.mptt_tree
