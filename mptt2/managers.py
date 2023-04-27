@@ -5,6 +5,7 @@ from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
 from mptt2.enums import Position
+from mptt2.exceptions import InvalidMove
 from mptt2.query import DescendantsQuery, RootQuery, TreeQuerySet
 
 
@@ -20,6 +21,18 @@ class TreeManager(Manager):
                     node,
                     target=None,
                     position: Position = Position.LAST_CHILD.value):
+        """Tree function to insert this node to a given target relative by the given position
+
+        :param target: The target node where the given node shall be inserted relative to.
+        :type target: :class:`mptt2.models.Node`
+
+        :param position: The relative position to the target
+                         (Default: ``Position.LAST_CHILD``)
+        :type target: :class:`mptt2.enums.Position`, optional
+
+        :returns: the inserted node it self
+        :rtype: :class:`mptt2.models.Node`
+        """
 
         if node.pk and self.filter(pk=node.pk).exists():
             raise ValueError(
@@ -86,11 +99,23 @@ class TreeManager(Manager):
     def move_node(self,
                   node,
                   target,
-                  position=Position.LAST_CHILD.value,
-                  ):
+                  position=Position.LAST_CHILD.value):
+        """Tree function to move a node relative to a given target by the given position
+
+        :param target: The target node where the given node shall be inserted relative to.
+        :type target: :class:`mptt2.models.Node`
+
+        :param position: The relative position to the target
+                         (Default: ``Position.LAST_CHILD``)
+        :type position: :class:`mptt2.enums.Position`, optional
+
+        :returns: the inserted node it self
+        :rtype: :class:`mptt2.models.Node`
+        """
+
         if node.mptt_tree != target.mptt_tree:
-            raise NotImplementedError(
-                "moving nodes between trees is not implemented")
+            raise InvalidMove(
+                "moving nodes between trees is not supported")
 
         elif position == Position.LEFT.value:
             if target.mptt_lft - node.mptt_rgt == 1:

@@ -184,14 +184,14 @@ class Node(Model):
         return self.objects.get(RootQuery(of=self))
 
     def move_to(self, target, position: Position = Position.LAST_CHILD):
-        """Tree function to move this node to a given target relative by the given position
+        """Tree function to move a node relative to a given target by the given position
 
         :param target: The target node where the given node shall be inserted relative to.
         :type target: :class:`mptt2.models.Node`
 
         :param position: The relative position to the target
                          (Default: ``Position.LAST_CHILD``)
-        :type target: :class:`mptt2.enums.Position`, optional
+        :type position: :class:`mptt2.enums.Position`, optional
 
         :returns: the inserted node it self
         :rtype: :class:`mptt2.models.Node`
