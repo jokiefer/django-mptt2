@@ -145,33 +145,25 @@ class TreeManager(Manager):
                 # do nothing. Given node is the left sibling of the given target.
                 return
 
-            _update = {
-                "mptt_lft": Case(
-                    When(
-                        condition=IsDescendantOfQuery(
-                            of=node, include_self=True),
-                        then=Left() - Value(target.subtree_width)
-                    ),
-                    default=Left() + Value(node.subtree_width),
-                    output_field=PositiveIntegerField()
-                ),
-                "mptt_rgt": Case(
-                    When(
-                        condition=IsDescendantOfQuery(
-                            of=node, include_self=True),
-                        then=Right() - Value(target.subtree_width)
-                    ),
-                    default=Right() + Value(node.subtree_width),
-                    output_field=PositiveIntegerField()
-                ),
-            }
-
-            self.select_for_update().filter(
-                DescendantsQuery(of=node, include_self=True) |
+            # update target subtree
+            target_subtree = self.select_for_update().filter(
                 DescendantsQuery(of=target, include_self=True)
-            ).update(
-                **_update
             )
+            for _node in target_subtree:
+                _node.mptt_lft += node.subtree_width
+                _node.mptt_rgt += node.subtree_width
+
+            # update node subtree
+            node_subtree = self.select_for_update().filter(
+                DescendantsQuery(of=node, include_self=True)
+            )
+            for _node in node_subtree:
+                _node.mptt_lft -= target.subtree_width
+                _node.mptt_rgt -= target.subtree_width
+
+            objs = list(target_subtree) + list(node_subtree)
+            self.bulk_update(objs=objs, fields=[
+                "mptt_lft", "mptt_rgt"])
 
         elif position == Position.RIGHT:
             if node.mptt_lft - target.mptt_rgt == 1:
