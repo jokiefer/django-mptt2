@@ -73,7 +73,7 @@ class Node(Model):
         help_text=_("The hierarchy level of this node inside the tree")
     )
 
-    objects = TreeManager()
+    objects: TreeManager = TreeManager()
 
     class Meta:
         abstract = True
