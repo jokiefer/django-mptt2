@@ -1,3 +1,5 @@
+from typing import Dict
+
 from django.db.models import Case, When
 from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
@@ -17,8 +19,61 @@ class TreeManager(Manager):
     def get_queryset(self) -> QuerySet[TreeQuerySet]:
         return TreeQuerySet(self.model, using=self._db)
 
-    # FIXME: code of all position checking branches could be merged with some additional logic
-    # FIXME: create query object to get right sibling and there descendants
+    def _calculate_node_mptt_values(self, node, target, position):
+        node.mptt_tree = target.mptt_tree
+        if position == Position.LAST_CHILD:
+            node.mptt_parent = target
+            node.mptt_depth = target.mptt_depth + 1
+            node.mptt_lft = target.mptt_rgt
+            node.mptt_rgt = target.mptt_rgt + 1
+        elif position == Position.FIRST_CHILD:
+            node.mptt_parent = target
+            node.mptt_depth = target.mptt_depth + 1
+            node.mptt_lft = target.mptt_lft + 1
+            node.mptt_rgt = target.mptt_lft + 2
+        elif position == Position.LEFT:
+            node.mptt_parent = target.mptt_parent
+            node.mptt_depth = target.mptt_depth
+            node.mptt_lft = target.mptt_lft
+            node.mptt_rgt = target.mptt_lft + 1
+        elif position == Position.RIGHT:
+            node.mptt_parent = target.mptt_parent
+            node.mptt_depth = target.mptt_depth
+            node.mptt_lft = target.mptt_rgt + 1
+            node.mptt_rgt = target.mptt_rgt + 2
+
+    def _calculate_filter(self, target, position):
+        if position in [Position.LAST_CHILD, Position.RIGHT]:
+            return (
+                RootQuery(of=target) |
+                RightSiblingsWithDescendants(
+                    of=target, include_self=True if position == Position.LAST_CHILD else False)
+            )
+        else:
+            return (
+                RootQuery(of=target) |
+                DescendantsQuery(of=target, include_self=True) |
+                RightSiblingsWithDescendants(of=target)
+            )
+
+    def _calculate_conditional_update(self, target, position) -> Dict:
+        condition = ~RootQuery(of=target)
+
+        if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
+            condition &= ~SameNodeQuery(of=target)
+
+        return {
+            "mptt_lft": Case(
+                When(
+                    condition=condition,
+                    then=Left() + 2
+                ),
+                default=Left(),
+                output_field=PositiveIntegerField()
+            ),
+            "mptt_rgt": Right() + 2
+        }
+
     @atomic
     def insert_node(self,
                     node,
@@ -41,6 +96,9 @@ class TreeManager(Manager):
             raise ValueError(
                 _("Cannot insert a node which has already been saved."))
 
+        if position not in Position:
+            raise NotImplementedError("given position is not supported")
+
         if target is None:
             from mptt2.models import Tree
             node.mptt_tree = Tree.objects.create()
@@ -48,64 +106,13 @@ class TreeManager(Manager):
             node.mptt_rgt = 2
             node.mptt_depth = 0
             node.parent = None
-        elif position == Position.LAST_CHILD:
-            node.mptt_parent = target
-            node.mptt_tree = target.mptt_tree
-            node.mptt_depth = target.mptt_depth + 1
-            node.mptt_lft = target.mptt_rgt
-            node.mptt_rgt = target.mptt_rgt + 1
-            with atomic():
-                self.select_for_update().filter(
-                    RootQuery(of=target) |
-                    RightSiblingsWithDescendants(of=target, include_self=True)
-                ).update(
-                    mptt_lft=Case(
-                        When(
-                            condition=~RootQuery(of=target) &
-                            ~SameNodeQuery(of=target),
-                            then=Left() + 2
-                        ),
-                        default=Left(),
-                        output_field=PositiveIntegerField()
-                    ),
-                    mptt_rgt=Right() + 2
-                )
-        elif position == Position.FIRST_CHILD:
-            node.mptt_parent = target
-            node.mptt_tree = target.mptt_tree
-            node.mptt_depth = target.mptt_depth + 1
-            node.mptt_lft = target.mptt_lft + 1
-            node.mptt_rgt = target.mptt_lft + 2
-
-            with atomic():
-                self.filter(mptt_tree=node.mptt_tree, mptt_rgt__gte=target.mptt_lft).update(
-                    mptt_rgt=Right() + 2)
-                self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_lft).update(
-                    mptt_lft=Left() + 2)
-        elif position == Position.LEFT:
-            node.mptt_parent = target.mptt_parent
-            node.mptt_tree = target.mptt_tree
-            node.mptt_depth = target.mptt_depth
-            node.mptt_lft = target.mptt_lft
-            node.mptt_rgt = target.mptt_lft + 1
-            with atomic():
-                self.filter(mptt_tree=node.mptt_tree, mptt_lft__gte=target.mptt_lft).update(
-                    mptt_lft=Left() + 2, mptt_rgt=Right() + 2)
-                self.filter(RootQuery(mptt_tree=node.mptt_tree,)).update(
-                    mptt_rgt=Right() + 2)
-        elif position == Position.RIGHT:
-            node.mptt_parent = target.mptt_parent
-            node.mptt_tree = target.mptt_tree
-            node.mptt_depth = target.mptt_depth
-            node.mptt_lft = target.mptt_rgt + 1
-            node.mptt_rgt = target.mptt_rgt + 2
-            with atomic():
-                self.filter(mptt_tree=node.mptt_tree, mptt_rgt__gt=target.mptt_rgt).update(
-                    mptt_rgt=Right() + 2)
-                self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_rgt).update(
-                    mptt_lft=Left() + 2)
         else:
-            raise NotImplementedError("given position is not supported")
+            self._calculate_node_mptt_values(
+                node=node, target=target, position=position)
+            self.select_for_update().filter(
+                self._calculate_filter(target=target, position=position)
+            ).update(**self._calculate_conditional_update(target=target, position=position))
+
         node.save()
         return node
 
