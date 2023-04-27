@@ -1,6 +1,6 @@
 from typing import Dict
 
-from django.db.models import Case, When
+from django.db.models import Case, Q, Value, When
 from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
 from django.db.models.query import QuerySet
@@ -10,8 +10,9 @@ from django.utils.translation import gettext as _
 from mptt2.enums import Position
 from mptt2.exceptions import InvalidMove
 from mptt2.expressions import Left, Right
-from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
-                         RootQuery, SameNodeQuery, TreeQuerySet)
+from mptt2.query import (DescendantsQuery, IsDescendantOfQuery,
+                         RightSiblingsWithDescendants, RootQuery,
+                         SameNodeQuery, TreeQuerySet)
 
 
 class TreeManager(Manager):
@@ -19,7 +20,7 @@ class TreeManager(Manager):
     def get_queryset(self) -> QuerySet[TreeQuerySet]:
         return TreeQuerySet(self.model, using=self._db)
 
-    def _calculate_node_mptt_values(self, node, target, position):
+    def _calculate_node_mptt_values_for_insert(self, node, target, position):
         node.mptt_tree = target.mptt_tree
         if position == Position.LAST_CHILD:
             node.mptt_parent = target
@@ -42,7 +43,7 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_rgt + 1
             node.mptt_rgt = target.mptt_rgt + 2
 
-    def _calculate_filter(self, target, position):
+    def _calculate_filter_for_insert(self, target, position):
         if position in [Position.LAST_CHILD, Position.RIGHT]:
             return (
                 RootQuery(of=target) |
@@ -56,7 +57,7 @@ class TreeManager(Manager):
                 RightSiblingsWithDescendants(of=target)
             )
 
-    def _calculate_conditional_update(self, target, position) -> Dict:
+    def _calculate_conditional_update_for_insert(self, target, position) -> Dict:
         condition = ~RootQuery(of=target)
 
         if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
@@ -107,11 +108,12 @@ class TreeManager(Manager):
             node.mptt_depth = 0
             node.parent = None
         else:
-            self._calculate_node_mptt_values(
+            self._calculate_node_mptt_values_for_insert(
                 node=node, target=target, position=position)
             self.select_for_update().filter(
-                self._calculate_filter(target=target, position=position)
-            ).update(**self._calculate_conditional_update(target=target, position=position))
+                self._calculate_filter_for_insert(
+                    target=target, position=position)
+            ).update(**self._calculate_conditional_update_for_insert(target=target, position=position))
 
         node.save()
         return node
@@ -142,26 +144,34 @@ class TreeManager(Manager):
             if target.mptt_lft - node.mptt_rgt == 1:
                 # do nothing. Given node is the left sibling of the given target.
                 return
-            # update target subtree
-            target_subtree = self.select_for_update().filter(
+
+            _update = {
+                "mptt_lft": Case(
+                    When(
+                        condition=IsDescendantOfQuery(
+                            of=node, include_self=True),
+                        then=Left() - Value(target.subtree_width)
+                    ),
+                    default=Left() + Value(node.subtree_width),
+                    output_field=PositiveIntegerField()
+                ),
+                "mptt_rgt": Case(
+                    When(
+                        condition=IsDescendantOfQuery(
+                            of=node, include_self=True),
+                        then=Right() - Value(target.subtree_width)
+                    ),
+                    default=Right() + Value(node.subtree_width),
+                    output_field=PositiveIntegerField()
+                ),
+            }
+
+            self.select_for_update().filter(
+                DescendantsQuery(of=node, include_self=True) |
                 DescendantsQuery(of=target, include_self=True)
+            ).update(
+                **_update
             )
-            for _node in target_subtree:
-                _node.mptt_lft += node.subtree_width
-                _node.mptt_rgt += node.subtree_width
-
-            # update node subtree
-            node_subtree = self.select_for_update().filter(
-                DescendantsQuery(of=node, include_self=True)
-            )
-            for _node in node_subtree:
-                _node.mptt_lft -= target.subtree_width
-                _node.mptt_rgt -= target.subtree_width
-
-            objs = list(target_subtree) + list(node_subtree)
-
-            self.bulk_update(objs=objs, fields=[
-                "mptt_lft", "mptt_rgt"])
 
         elif position == Position.RIGHT:
             if node.mptt_lft - target.mptt_rgt == 1:
