@@ -147,6 +147,16 @@ class LeafNodesQuery(DescendantsQuery):
         super().__init__(mptt_lft=F("mptt_rgt") - 1, *args, **kwargs)
 
 
+class IsDescendantOfQuery(SameTreeQuery):
+    def __init__(self, of, include_self: bool = False, *args: Any, **kwargs: Any) -> None:
+        query_kwargs: Dict = {
+            "mptt_lft__gte" if include_self else "mptt_lft__gt": of.mptt_lft,
+            "mptt_rgt__lte" if include_self else "mptt_rgt__lt": of.mptt_rgt,
+            "mptt_tree": of.mptt_tree
+        }
+        super().__init__(*args, **kwargs, **query_kwargs)
+
+
 class TreeQuerySet(QuerySet):
 
     def with_descendant_count(self):
