@@ -1,13 +1,13 @@
-from django.db.models import Case, F, Value, When
-from django.db.models.expressions import F
+from django.db.models import Case, When
 from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
-from django.db.models.query import Q, QuerySet
+from django.db.models.query import QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
 from mptt2.enums import Position
 from mptt2.exceptions import InvalidMove
+from mptt2.expressions import Left, Right
 from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
                          RootQuery, SameNodeQuery, TreeQuerySet)
 
@@ -55,7 +55,7 @@ class TreeManager(Manager):
             node.mptt_lft = target.mptt_rgt
             node.mptt_rgt = target.mptt_rgt + 1
             with atomic():
-                self.filter(
+                self.select_for_update().filter(
                     RootQuery(of=target) |
                     RightSiblingsWithDescendants(of=target, include_self=True)
                 ).update(
@@ -63,12 +63,12 @@ class TreeManager(Manager):
                         When(
                             condition=~RootQuery(of=target) &
                             ~SameNodeQuery(of=target),
-                            then=F("mptt_lft") + 2
+                            then=Left() + 2
                         ),
-                        default=F("mptt_lft"),
+                        default=Left(),
                         output_field=PositiveIntegerField()
                     ),
-                    mptt_rgt=F("mptt_rgt") + 2
+                    mptt_rgt=Right() + 2
                 )
         elif position == Position.FIRST_CHILD:
             node.mptt_parent = target
@@ -79,9 +79,9 @@ class TreeManager(Manager):
 
             with atomic():
                 self.filter(mptt_tree=node.mptt_tree, mptt_rgt__gte=target.mptt_lft).update(
-                    mptt_rgt=F("mptt_rgt") + 2)
+                    mptt_rgt=Right() + 2)
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_lft).update(
-                    mptt_lft=F("mptt_lft") + 2)
+                    mptt_lft=Left() + 2)
         elif position == Position.LEFT:
             node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
@@ -90,9 +90,9 @@ class TreeManager(Manager):
             node.mptt_rgt = target.mptt_lft + 1
             with atomic():
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gte=target.mptt_lft).update(
-                    mptt_lft=F("mptt_lft") + 2, mptt_rgt=F("mptt_rgt") + 2)
+                    mptt_lft=Left() + 2, mptt_rgt=Right() + 2)
                 self.filter(RootQuery(mptt_tree=node.mptt_tree,)).update(
-                    mptt_rgt=F("mptt_rgt") + 2)
+                    mptt_rgt=Right() + 2)
         elif position == Position.RIGHT:
             node.mptt_parent = target.mptt_parent
             node.mptt_tree = target.mptt_tree
@@ -101,9 +101,9 @@ class TreeManager(Manager):
             node.mptt_rgt = target.mptt_rgt + 2
             with atomic():
                 self.filter(mptt_tree=node.mptt_tree, mptt_rgt__gt=target.mptt_rgt).update(
-                    mptt_rgt=F("mptt_rgt") + 2)
+                    mptt_rgt=Right() + 2)
                 self.filter(mptt_tree=node.mptt_tree, mptt_lft__gt=target.mptt_rgt).update(
-                    mptt_lft=F("mptt_lft") + 2)
+                    mptt_lft=Left() + 2)
         else:
             raise NotImplementedError("given position is not supported")
         node.save()
