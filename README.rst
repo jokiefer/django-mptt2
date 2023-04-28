@@ -52,4 +52,4 @@ Adding nodes:
     alternative.insert_at(target=rock) # it will become the last child from rock, the right sibling of metal
 
 
-For full usage description, please read the tutorial section.
+For full usage description, please read the tutorial section of our `documentation <https://django-mptt2.rtfd.io>`_.
