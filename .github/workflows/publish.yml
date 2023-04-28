@@ -1,6 +1,7 @@
-name: Publish package distributions to TestPyPI
+name: Publish package distributions to PyPI
 on:
-  workflow_dispatch:
+  release:
+    types: [published]
 jobs:
   pypi:
     name: Publish package
@@ -22,6 +23,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
           verbose: true
-          repository-url: https://test.pypi.org/legacy/
