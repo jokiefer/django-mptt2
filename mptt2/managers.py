@@ -8,7 +8,7 @@ from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
 from mptt2.enums import Position
-from mptt2.exceptions import InvalidMove
+from mptt2.exceptions import InvalidInsert, InvalidMove
 from mptt2.expressions import Depth, Left, Right
 from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
                          RootQuery, SameNodeQuery, TreeQuerySet)
@@ -74,6 +74,17 @@ class TreeManager(Manager):
             "mptt_rgt": Right() + 2
         }
 
+    def _validate_insert(self, node, target, position):
+        if node.pk and self.filter(pk=node.pk).exists():
+            raise ValueError(
+                _("Cannot insert a node which has already been saved."))
+
+        if position not in Position:
+            raise NotImplementedError(_("given position is not supported"))
+
+        if position in [Position.LEFT, Position.RIGHT] and target.is_root_node:
+            raise InvalidInsert(_("You can't insert a second root node."))
+
     @atomic
     def insert_node(self,
                     node,
@@ -92,12 +103,7 @@ class TreeManager(Manager):
         :rtype: :class:`mptt2.models.Node`
         """
 
-        if node.pk and self.filter(pk=node.pk).exists():
-            raise ValueError(
-                _("Cannot insert a node which has already been saved."))
-
-        if position not in Position:
-            raise NotImplementedError("given position is not supported")
+        self._validate_insert(node, target, position)
 
         if target is None:
             from mptt2.models import Tree
@@ -120,7 +126,7 @@ class TreeManager(Manager):
     def _validate_move(self, node, target, position):
         if node.mptt_tree != target.mptt_tree:
             raise InvalidMove(
-                "moving nodes between trees is not supported")
+                _("moving nodes between trees is not supported"))
 
         if position not in [Position.LAST_CHILD, Position.FIRST_CHILD, Position.LEFT, Position.RIGHT]:
 

@@ -224,7 +224,7 @@ class Node(Model):
     @ property
     def is_root_node(self) -> bool:
         """returns True if this is the root of the tree"""
-        return self.parent is None
+        return self.mptt_parent is None
 
     @ property
     def is_leaf_node(self) -> bool:
