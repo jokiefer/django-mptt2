@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 from django.db.models import Case, Q, Value, When
 from django.db.models.fields import PositiveIntegerField
@@ -7,7 +7,7 @@ from django.db.models.query import QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
-from mptt2.enums import Position
+from mptt2.enums import MoveKind, Position
 from mptt2.exceptions import InvalidMove
 from mptt2.expressions import Depth, Left, Right
 from mptt2.query import (DescendantsQuery, IsDescendantOfQuery,
@@ -118,6 +118,77 @@ class TreeManager(Manager):
         node.save()
         return node
 
+    def _validate_move(self, node, target, position):
+        if node.mptt_tree != target.mptt_tree:
+            raise InvalidMove(
+                "moving nodes between trees is not supported")
+
+        if position not in [Position.LAST_CHILD, Position.FIRST_CHILD, Position.LEFT, Position.RIGHT]:
+
+            raise ValueError(
+                _("An invalid position was given: %s.") % position)
+
+        base_msg = _("A node may not be made a {move_kind} of {relatedness}")
+        move_kind_i18n = _(
+            "child") if position in [Position.LAST_CHILD, Position.FIRST_CHILD] else _("sibling")
+        if node == target:
+            relatedness = _("itself")
+            msg = base_msg.format(move_kind=move_kind_i18n,
+                                  relatedness=relatedness)
+            raise InvalidMove(msg)
+        elif node.mptt_lft < target.mptt_lft < node.mptt_rgt:
+            relatedness = _("its descendants.")
+            msg = base_msg.format(move_kind=move_kind_i18n,
+                                  relatedness=relatedness)
+            raise InvalidMove(msg)
+
+    def _calculate_move_changes(self, node, target, position) -> Tuple:
+        if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
+            depth_change = node.mptt_depth - target.mptt_depth - 1
+            parent = target
+        elif position in [Position.LEFT, Position.RIGHT]:
+            depth_change = node.mptt_depth - target.mptt_depth
+            parent = target.mptt_parent
+
+        if position == Position.LAST_CHILD:
+            if target.mptt_rgt > node.mptt_rgt:
+                new_left = target.mptt_rgt - node.subtree_width
+                new_right = target.mptt_rgt - 1
+            else:
+                new_left = target.mptt_rgt
+                new_right = target.mptt_rgt + node.subtree_width - 1
+        elif position == Position.LEFT:
+            if target.mptt_lft > node.mptt_lft:
+                new_left = target.mptt_lft - node.subtree_width
+                new_right = target.mptt_lft - 1
+            else:
+                new_left = target.mptt_lft
+                new_right = target.mptt_lft + node.subtree_width - 1
+
+        elif position == Position.FIRST_CHILD:
+            if target.mptt_lft > node.mptt_lft:
+                new_left = target.mptt_lft - node.subtree_width + 1
+                new_right = target.mptt_lft
+            else:
+                new_left = target.mptt_lft + 1
+                new_right = target.mptt_lft + node.subtree_width
+        elif position == Position.RIGHT:
+            if target.mptt_rgt > node.mptt_rgt:
+                new_left = target.mptt_rgt - node.subtree_width + 1
+                new_right = target.mptt_rgt
+            else:
+                new_left = target.mptt_rgt + 1
+                new_right = target.mptt_rgt + node.subtree_width
+
+        left_boundary = min(node.mptt_lft, new_left)
+        right_boundary = max(node.mptt_rgt, new_right)
+        left_right_change = new_left - node.mptt_lft
+        gap_size = node.subtree_width
+        if left_right_change > 0:
+            gap_size = -gap_size
+
+        return new_left, new_right, depth_change, parent, left_boundary, right_boundary, left_right_change, gap_size
+
     @atomic
     def move_node(self,
                   node,
@@ -136,69 +207,10 @@ class TreeManager(Manager):
         :rtype: :class:`mptt2.models.Node`
         """
 
-        if node.mptt_tree != target.mptt_tree:
-            raise InvalidMove(
-                "moving nodes between trees is not supported")
+        self._validate_move(node, target, position)
 
-        if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
-            if node == target:
-                raise InvalidMove(
-                    _("A node may not be made a child of itself."))
-            elif node.mptt_lft < target.mptt_lft < node.mptt_rgt:
-                raise InvalidMove(
-                    _("A node may not be made a child of any of its descendants.")
-                )
-            if position == Position.LAST_CHILD:
-                if target.mptt_rgt > node.mptt_rgt:
-                    new_left = target.mptt_rgt - node.subtree_width
-                    new_right = target.mptt_rgt - 1
-                else:
-                    new_left = target.mptt_rgt
-                    new_right = target.mptt_rgt + node.subtree_width - 1
-            else:
-                if target.mptt_lft > node.mptt_lft:
-                    new_left = target.mptt_lft - node.subtree_width + 1
-                    new_right = target.mptt_lft
-                else:
-                    new_left = target.mptt_lft + 1
-                    new_right = target.mptt_lft + node.subtree_width
-            depth_change = node.mptt_depth - target.mptt_depth - 1
-            parent = target
-
-        elif position in [Position.LEFT, Position.RIGHT]:
-            if node == target:
-                raise InvalidMove(
-                    _("A node may not be made a sibling of itself."))
-            elif node.mptt_lft < target.mptt_lft < node.mptt_rgt:
-                raise InvalidMove(
-                    _("A node may not be made a sibling of any of its descendants.")
-                )
-            if position == Position.LEFT:
-                if target.mptt_lft > node.mptt_lft:
-                    new_left = target.mptt_lft - node.subtree_width
-                    new_right = target.mptt_lft - 1
-                else:
-                    new_left = target.mptt_lft
-                    new_right = target.mptt_lft + node.subtree_width - 1
-            else:
-                if target.mptt_rgt > node.mptt_rgt:
-                    new_left = target.mptt_rgt - node.subtree_width + 1
-                    new_right = target.mptt_rgt
-                else:
-                    new_left = target.mptt_rgt + 1
-                    new_right = target.mptt_rgt + node.subtree_width
-            depth_change = node.mptt_depth - target.mptt_depth
-            parent = target.mptt_parent
-        else:
-            raise ValueError(
-                _("An invalid position was given: %s.") % position)
-
-        left_boundary = min(node.mptt_lft, new_left)
-        right_boundary = max(node.mptt_rgt, new_right)
-        left_right_change = new_left - node.mptt_lft
-        gap_size = node.subtree_width
-        if left_right_change > 0:
-            gap_size = -gap_size
+        new_left, new_right, depth_change, parent, left_boundary, right_boundary, left_right_change, gap_size = self._calculate_move_changes(
+            node, target, position)
 
         self.select_for_update().filter(
             mptt_tree=target.mptt_tree
