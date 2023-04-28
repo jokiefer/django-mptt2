@@ -15,9 +15,3 @@ class Position(Enum):
 
     RIGHT: str = "right"
     """the node shall be the right sibling of the target"""
-
-
-class MoveKind(Enum):
-
-    CHILD: str = "child"
-    SIBLING: str = "sibling"

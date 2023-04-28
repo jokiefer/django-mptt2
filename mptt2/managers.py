@@ -1,18 +1,17 @@
 from typing import Dict, Tuple
 
-from django.db.models import Case, Q, Value, When
+from django.db.models import Case, Q, When
 from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
 from django.db.models.query import QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
-from mptt2.enums import MoveKind, Position
+from mptt2.enums import Position
 from mptt2.exceptions import InvalidMove
 from mptt2.expressions import Depth, Left, Right
-from mptt2.query import (DescendantsQuery, IsDescendantOfQuery,
-                         RightSiblingsWithDescendants, RootQuery,
-                         SameNodeQuery, TreeQuerySet)
+from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
+                         RootQuery, SameNodeQuery, TreeQuerySet)
 
 
 class TreeManager(Manager):
