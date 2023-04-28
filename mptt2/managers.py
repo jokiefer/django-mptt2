@@ -60,7 +60,11 @@ class TreeManager(Manager):
         condition = ~RootQuery(of=target)
 
         if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
-            condition &= ~SameNodeQuery(of=target)
+            # TODO: See changes between django 4.1 -> 4.2 https://github.com/django/django/commit/845667f2d1eb7063c568764a01fc9ee633ec5817#diff-fd68084e8b9b4f7bfd0df330a70f792633b28109d07b3df6609f2fb019d0f0f7L82
+            # with Django 4.2 we can use ~SameNodeQuery(of=target), cause the negated object is a shallow copy
+            # All versions bellow will construct the object new without passing the original arguments. So it will raise a TypeError
+            condition &= ~Q(mptt_tree=target.mptt_tree,
+                            mptt_lft=target.mptt_lft, mptt_rgt=target.mptt_rgt,)
 
         return {
             "mptt_lft": Case(

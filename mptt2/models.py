@@ -9,6 +9,7 @@ from django.db.models.query import Q, QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
+from mptt2.compatibility import violation_error_message_kwargs
 from mptt2.enums import Position
 from mptt2.managers import TreeManager
 from mptt2.query import (AncestorsQuery, ChildrenQuery, DescendantsQuery,
@@ -67,7 +68,7 @@ class Node(Model):
         verbose_name=_("right"),
         help_text=_("The right value of the node")
     )
-    mptt_depth: int = PositiveIntegerField(
+    mptt_depth = PositiveIntegerField(
         editable=False,
         verbose_name=_("depth"),
         help_text=_("The hierarchy level of this node inside the tree")
@@ -85,8 +86,7 @@ class Node(Model):
             CheckConstraint(
                 check=Q(mptt_rgt__gt=F("mptt_lft")),
                 name="rgt_gt_lft",
-                violation_error_message=_(
-                    "The right side value rgt is allways greater than the node left side value lft."),
+                **violation_error_message_kwargs()
             )
         ]
 
