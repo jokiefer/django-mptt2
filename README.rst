@@ -1,3 +1,8 @@
+.. image:: https://readthedocs.org/projects/django-mptt2/badge/?version=latest
+    :target: https://django-mptt2.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+
 django-mptt2
 ============
 Based on the idea of the unmaintained `django-mptt <https://github.com/django-mptt/django-mptt>`_ package i implemented this new code base to replace it.
