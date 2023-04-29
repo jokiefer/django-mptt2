@@ -2,8 +2,8 @@
     :target: https://django-mptt2.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://badge.fury.io/py/django-mptt2
-    :target: https://badge.fury.io/py/django-mptt2.svg
+.. image:: https://badge.fury.io/py/django-mptt2.svg
+    :target: https://pypi.org/project/django-mptt2/
     :alt: PyPi version
 
 django-mptt2
