@@ -10,7 +10,7 @@ on:
     - cron: 0 16 * * *
 jobs:
   test:
-    name: Publish package
+    name: running tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
