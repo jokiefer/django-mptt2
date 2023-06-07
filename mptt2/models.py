@@ -120,7 +120,7 @@ class Node(Model):
         :type asc: bool
 
         """
-        children = self.objects.filter(ChildrenQuery(of=self))
+        children = self.__class__.objects.filter(ChildrenQuery(of=self))
         return children.order_by("-mptt_lft") if asc else children
 
     def get_descendants(self, include_self=False, asc=False) -> QuerySet:
@@ -133,7 +133,7 @@ class Node(Model):
         :type asc: bool
 
         """
-        descendants = self.objects.filter(
+        descendants = self.__class__.objects.filter(
             DescendantsQuery(of=self, include_self=include_self))
         return descendants.order_by("-mptt_lft") if asc else descendants
 
@@ -147,7 +147,7 @@ class Node(Model):
         :type asc: bool
 
         """
-        ancestors = self.objects.filter(
+        ancestors = self.__class__.objects.filter(
             AncestorsQuery(of=self, include_self=include_self))
         return ancestors.order_by("-mptt_lft") if asc else ancestors
 
@@ -161,7 +161,7 @@ class Node(Model):
         :type asc: bool
 
         """
-        family = self.objects.filter(FamilyQuery(
+        family = self.__class__.objects.filter(FamilyQuery(
             of=self, include_self=include_self))
         return family.order_by("-mptt_lft") if asc else family
 
@@ -175,13 +175,13 @@ class Node(Model):
         :type asc: bool
 
         """
-        siblings = self.objects.filter(
+        siblings = self.__class__.objects.filter(
             SiblingsQuery(of=self, include_self=include_self))
         return siblings.order_by("-mptt_lft") if asc else siblings
 
     def get_root(self):
         """returns the root node of the tree where this node is part of"""
-        return self.objects.get(RootQuery(of=self))
+        return self.__class__.objects.get(RootQuery(of=self))
 
     def move_to(self, target, position: Position = Position.LAST_CHILD):
         """Tree function to move a node relative to a given target by the given position
@@ -196,7 +196,7 @@ class Node(Model):
         :returns: the inserted node it self
         :rtype: :class:`mptt2.models.Node`
         """
-        return self.objects.move_node(
+        return self.__class__.objects.move_node(
             node=self,
             target=target,
             position=position
@@ -215,7 +215,7 @@ class Node(Model):
         :returns: the inserted node it self
         :rtype: :class:`mptt2.models.Node`
         """
-        return self.objects.insert_node(
+        return self.__class__.objects.insert_node(
             node=self,
             target=target,
             position=position
