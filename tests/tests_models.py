@@ -7,6 +7,28 @@ class TestNodeModel(TestCase):
 
     fixtures = ["simple_nodes.json"]
 
+    def test_insert_root(self):
+        root_node: SimpleNode = SimpleNode()
+        root_node.insert_at(target=None)
+        root_pk = root_node.pk
+
+        self.assertGreater(root_pk, 0)
+        fetch_root = SimpleNode.objects.get(pk=root_pk)
+        self.assertIsNone(fetch_root.mptt_parent)
+
+    def test_insert_child(self):
+        root_node: SimpleNode = SimpleNode()
+        root_node.insert_at(target=None)
+        root_pk = root_node.pk
+
+        child_node: SimpleNode = SimpleNode()
+        child_node.insert_at(target=root_node)
+        child_pk = child_node.pk
+
+        self.assertGreater(child_pk, 0)
+        fetch_child = SimpleNode.objects.get(pk=child_pk)
+        self.assertEqual(fetch_child.mptt_parent.pk, root_pk)
+
     def test_delete(self):
         node: SimpleNode = SimpleNode.objects.get(pk=18)
         node.delete()

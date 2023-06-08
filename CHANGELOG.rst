@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased] - 202x-xx-xx
 -------------------------
 
+Fixed
+~~~~~
+* manager access for instance subfunctions: `get_children`, `get_descendants`, `get_ancestors`, `get_family`, `get_siblings`, `move_to`, `insert_at`
 
 [0.1.0] - 2023-04-29
 --------------------
