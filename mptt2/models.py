@@ -57,7 +57,7 @@ class Node(Model):
         help_text=_("The unique tree, where this node is part of"),
         related_name="nodes",
         related_query_name="node",
-        blank=True
+        editable=False
     )
     mptt_lft = PositiveIntegerField(
         editable=False,
