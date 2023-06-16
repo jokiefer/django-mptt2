@@ -15,6 +15,7 @@ from mptt2.enums import Position
 from mptt2.exceptions import MethodNotAllowed
 
 csrf_protect_m = method_decorator(csrf_protect)
+from django.contrib.admin.decorators import display
 from django.contrib.admin.utils import flatten_fieldsets
 from django.views.generic.edit import FormView
 
@@ -51,12 +52,20 @@ class InsertAtForm(ModelForm):
         self._save_m2m()
         return new_obj
 
+
+
+@display()
+def tree_node(obj):
+    level_string = "".join("-" for _ in range(obj.mptt_depth))
+    return f"{level_string} {obj}"
+
 class MPTTModelAdmin(ModelAdmin):
     """
     A basic admin class that displays tree items according to their position in
     the tree.  No extra editing functionality beyond what Django admin normally
     offers.
     """
+    list_display = [tree_node]
     change_list_template = "admin/mptt_change_list.html"
     
     def get_urls(self):
