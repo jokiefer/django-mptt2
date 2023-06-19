@@ -10,8 +10,9 @@ from django.utils.translation import gettext as _
 from mptt2.enums import Position
 from mptt2.exceptions import InvalidInsert, InvalidMove
 from mptt2.expressions import Depth, Left, Right
-from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
-                         RootQuery, SameNodeQuery, TreeQuerySet)
+from mptt2.query import (AncestorsQuery, DescendantsQuery,
+                         RightSiblingsWithDescendants, RootQuery,
+                         SameNodeQuery, TreeQuerySet)
 
 
 class TreeManager(Manager):
@@ -49,7 +50,8 @@ class TreeManager(Manager):
             return (
                 RootQuery(of=target) |
                 RightSiblingsWithDescendants(
-                    of=target, include_self=True if position == Position.LAST_CHILD else False)
+                    of=target, include_self=True if position == Position.LAST_CHILD else False)  |
+                AncestorsQuery(of=target)
             )
         else:
             return (
@@ -62,7 +64,7 @@ class TreeManager(Manager):
         condition = ~RootQuery(of=target)
 
         if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
-            condition &= ~SameNodeQuery(of=target)
+            condition &= ~SameNodeQuery(of=target) & ~ AncestorsQuery(of=target)
 
         return {
             "mptt_lft": Case(

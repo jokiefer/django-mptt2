@@ -43,7 +43,7 @@ class InsertAtForm(ModelForm):
         choices=Position.choices,
         initial=Position.LAST_CHILD, 
         required=False
-        )
+    )
 
     def save(self, *args, **kwargs):
         return self.insert_at()
@@ -59,6 +59,39 @@ class InsertAtForm(ModelForm):
         new_obj = self.instance.insert_at(self.cleaned_data["target"], self.cleaned_data["position"])
         self._save_m2m()
         return new_obj
+    
+
+class MoveToForm(ModelForm):
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["target"].queryset = self.instance.__class__.objects.all()
+
+    target = ModelChoiceField(
+        queryset=None, 
+        help_text=_("leave empty if you wan't to create a new root node"),
+        widget=AdminTextInputWidget
+    )
+    position= ChoiceField(
+        choices=Position.choices,
+        initial=Position.LAST_CHILD, 
+        required=False
+    )
+
+    def save(self, *args, **kwargs):
+        return self.insert_at()
+
+    def save_m2m(self):
+        self._save_m2m()
+
+    def insert_at(self):
+        if self.errors:
+            raise ValueError(
+                f"The {self.instance._meta.object_name} could not be moved because the data didn't validate."
+            )
+        new_obj = self.instance.move_to(self.cleaned_data["target"], self.cleaned_data["position"])
+        self._save_m2m()
+        return new_obj
 
 
 class MPTTModelAdmin(ModelAdmin):
@@ -70,7 +103,14 @@ class MPTTModelAdmin(ModelAdmin):
     change_list_template = "admin/mptt_change_list.html"
     search_fields = ["pk"]
     insert_at_form = InsertAtForm
+    move_to_form = MoveToForm
 
+    @display(description=_("Move"))
+    def move_node(self, obj):
+        if self.has_change_permission(request=self.request, obj=obj):
+            return format_html(
+                f'<span data-id="{obj.id}" data-lft="{obj.mptt_lft}" data-rgt="{obj.mptt_rgt}" data-depth="{obj.mptt_depth}" data-has-leafs="{str(obj.has_leafs).lower()}" data-depth="{obj.mptt_depth}" class="mdi mdi-cursor-move"></span>'
+            )
 
     @display(description=_("Insert"))
     def insert_links(self, obj):
@@ -113,6 +153,7 @@ class MPTTModelAdmin(ModelAdmin):
         if self.has_add_permission(request=request):
             list_display.append("insert_links")
 
+        list_display.insert(1, "move_node")
         list_display.append("delete_link")
         return list_display
 
@@ -124,6 +165,12 @@ class MPTTModelAdmin(ModelAdmin):
                 self.admin_site.admin_view(self.add_view), 
                 name="node-insert",
                 kwargs={"extra_context": {"title": "Insert node"}}
+            ),
+            path(
+                "move_to/", 
+                self.admin_site.admin_view(self.change_view), 
+                name="node-move",
+                kwargs={"extra_context": {"title": "Move node"}}
             )
         ]
         return my_urls + urls
@@ -131,16 +178,24 @@ class MPTTModelAdmin(ModelAdmin):
     def get_insert_at_form(self):
         return self.insert_at_form
 
+    def get_move_to_form(self):
+        return self.move_to_form
+
     def is_insert_at_action(self, request):
         return "insert_at" in request.path
+
+    def is_move_to_action(self, request):
+        return "move_to" in request.path
 
     def get_form(self, request: Any, obj: Any | None = ..., change: bool = ..., **kwargs: Any) -> Any:
         if self.is_insert_at_action(request):
             return super().get_form(request, obj, change, form=self.get_insert_at_form(), **kwargs)
+        elif self.is_move_to_action(request):
+            return super().get_form(request, obj, change, form=self.get_move_to_form(), **kwargs)
         return super().get_form(request, obj, change, **kwargs)
-
 
     def changelist_view(self, request, extra_context=None):
         """Adds request attribute to this admin view"""
         self.request = request
         return super().changelist_view(request, extra_context=extra_context)
+    
