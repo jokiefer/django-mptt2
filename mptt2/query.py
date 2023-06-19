@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from django.db.models.expressions import CombinedExpression, F, OuterRef
 from django.db.models.query import QuerySet
@@ -161,6 +161,10 @@ class IsDescendantOfQuery(SameTreeQuery):
 
 
 class TreeQuerySet(QuerySet):
+
+    def delete(self):
+        # TODO: if this function is called, we need to analyze the nodes of the queryset first and update the tree(s).
+        raise NotImplementedError("Delete MPTT nodes in bulk is not supported for now. Please delete a single node. All descendants will also be deleted as well.")
 
     def with_descendant_count(self):
         self.annotate(descendant_count=F("mptt_rgt") - F("mptt_lft") // 2)

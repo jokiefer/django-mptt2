@@ -16,8 +16,10 @@ from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
 
 class TreeManager(Manager):
 
-    def get_queryset(self) -> QuerySet[TreeQuerySet]:
-        return TreeQuerySet(self.model, using=self._db)
+    queryset_class = TreeQuerySet
+
+    def get_queryset(self) -> QuerySet[queryset_class]:
+        return self.queryset_class(self.model, using=self._db)
 
     def _calculate_node_mptt_values_for_insert(self, node, target, position):
         node.mptt_tree = target.mptt_tree
