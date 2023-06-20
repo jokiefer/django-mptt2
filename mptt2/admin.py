@@ -109,7 +109,7 @@ class MPTTModelAdmin(ModelAdmin):
     def move_node(self, obj):
         if self.has_change_permission(request=self.request, obj=obj):
             return format_html(
-                f'<span data-id="{obj.id}" data-lft="{obj.mptt_lft}" data-rgt="{obj.mptt_rgt}" data-depth="{obj.mptt_depth}" data-has-leafs="{str(obj.has_leafs).lower()}" data-depth="{obj.mptt_depth}" class="mdi mdi-cursor-move"></span>'
+                f'<span data-id="{obj.id}" data-lft="{obj.mptt_lft}" data-rgt="{obj.mptt_rgt}" data-depth="{obj.mptt_depth}" data-has-leafs="{str(obj.has_leafs).lower()}" data-depth="{obj.mptt_depth}" data-tree="{obj.mptt_tree_id}" class="mdi mdi-cursor-move {"draggable-node" if not obj.is_root_node else ""}"></span>'
             )
 
     @display(description=_("Insert"))
