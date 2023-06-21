@@ -1,0 +1,154 @@
+{% load i18n mptt_admin %}
+{% if result_hidden_fields %}
+<div class="hiddenfields">{# DIV for HTML validation #}
+    {% for item in result_hidden_fields %}{{ item }}{% endfor %}
+</div>
+{% endif %}
+
+{% draggable_tree cl.result_list %}
+
+
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
+<script src=" https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js "></script>
+
+<script>
+
+
+    // const result_list = document.getElementById('result_list').getElementsByTagName('tbody')[0];
+
+    // //console.log("tbody", result_list);
+
+
+    // function getTableRow(index) {
+    //     return document.getElementById('result_list').getElementsByTagName('tbody')[0].getElementsByTagName('tr')[index];
+    // }
+
+    // function getNodeDataset(row) {
+    //     return row.querySelector(".mdi-cursor-move").dataset
+    // }
+
+    // function getNodeChildren(source_row) {
+    //     console.log(Sortable);
+    //     const sourceDataset = getNodeDataset(source_row);
+    //     console.log(sourceDataset);
+    //     const allNodes = document.getElementById('result_list').getElementsByTagName('tbody')[0].querySelectorAll("tr");
+    //     allNodes.forEach(node => { Sortable.utils.deselect(node); });
+    //     console.log(allNodes);
+
+    //     const subtreeNodes = [...allNodes].filter((node) => {
+    //         const nodeDataset = getNodeDataset(node);
+    //         const isDescendant = (nodeDataset.tree == sourceDataset.tree) && (nodeDataset.lft >= sourceDataset.lft) && (nodeDataset.rgt <= sourceDataset.rgt);
+
+    //         console.log("node: ", node);
+    //         if (!isDescendant) {
+    //             let firstChildRow = document.getElementById('result_list').insertRow(node.rowIndex + 1);
+    //             let cell = firstChildRow.insertCell(0);
+    //             let newText = document.createTextNode("Move as first child");
+    //             cell.appendChild(newText);
+    //         }
+
+    //         return isDescendant
+    //     }
+    //     );
+    //     console.log(subtreeNodes);
+
+    //     subtreeNodes.forEach(node => { Sortable.utils.select(node); });
+
+    // }
+
+
+    var trees = [].slice.call(document.querySelectorAll('[id*="tree-id"]'));
+
+    trees.forEach((tree) => {
+        var nestedSortables = [].slice.call(tree.querySelectorAll('.nested-sortable'));
+        // Loop through each nested sortable element
+
+        nestedSortables.forEach((nested) => {
+            new Sortable(nested, {
+                group: tree.id, // is the id of the sourounding html container. Should be the tree id to allow only dragging nodes inside current tree
+                animation: 150,
+                fallbackOnBody: true,
+                swapThreshold: 0.65
+            });
+        });
+
+    });
+
+
+
+
+    // const sort = new Sortable(result_list, {
+    //     multiDrag: true,
+    //     selectedClass: "selected",
+    //     dragoverBubble: true,
+    //     // draggable: ".draggable-node",
+    //     //handle: ".mdi-cursor-move",
+    //     // group: 'shared',
+    //     // Element is chosen
+
+
+    //     // onChoose: function (/**Event*/evt) {
+    //     //     const source_row = getTableRow(evt.oldIndex);
+    //     //     getNodeChildren(source_row);
+
+
+    //     // },
+
+    //     onDeselect: function (evt) {
+
+    //     },
+    //     onSelect: function (evt) {
+    //         // console.log("select: ", evt);
+    //         // const source_row = getTableRow(evt.oldIndex);
+    //         // getNodeChildren(evt.item);
+
+
+
+
+    //     },
+    //     onMove: function (evt) {
+    //         // const selectedNodes = document.getElementById('result_list').getElementsByTagName('tbody')[0].querySelectorAll(".selected");
+    //         // if (selectedNodes.length == 0) {
+    //         //     return false;
+    //         // }
+
+
+    //     },
+    //     // Changed sorting within list
+    //     onUpdate: function (/**Event*/evt) {
+    //         // same properties as onEnd
+    //         console.log("onUpdate", evt);
+    //         // const source_row = document.getElementById('result_list').getElementsByTagName('tbody')[0].getElementsByTagName('tr')[evt.newIndex];
+    //         // const target_index = (evt.oldIndex < evt.newIndex) ? evt.newIndex - 1 : evt.newIndex + 1;
+    //         // const target_row = document.getElementById('result_list').getElementsByTagName('tbody')[0].getElementsByTagName('tr')[target_index];
+
+    //         // //console.log(source_row);
+    //         // //console.log(target_row);
+
+
+
+    //         // const source_move_span = source_row.querySelector(".mdi-cursor-move");
+    //         // const target_move_span = target_row.querySelector(".mdi-cursor-move");
+
+    //         // //console.log("source pk:", source_move_span.dataset.id);
+    //         // //console.log("target pk", target_move_span.dataset.id);
+
+    //         // if (target_move_span.dataset.lft < source_move_span.dataset.lft) {
+
+    //         // }
+
+    //         // if (target_move_span.dataset.hasLeafs) {
+    //         //     //console.log("first child of target");
+    //         // } else {
+    //         //     //TODO: get the clostest depth -1
+    //         //     // target = find_upper(target_move_span.dataset.depth - 1)
+
+    //         // }
+
+
+    //     },
+
+    // });
+    // console.log(sort);
+
+</script>
