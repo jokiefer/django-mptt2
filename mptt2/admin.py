@@ -78,20 +78,23 @@ class MoveToForm(ModelForm):
         required=False
     )
 
+    class Meta:
+        fields = ["target", "position"]
+
     def save(self, *args, **kwargs):
-        return self.insert_at()
+        return self.move_to()
 
     def save_m2m(self):
         self._save_m2m()
 
-    def insert_at(self):
+    def move_to(self):
         if self.errors:
             raise ValueError(
                 f"The {self.instance._meta.object_name} could not be moved because the data didn't validate."
             )
-        new_obj = self.instance.move_to(self.cleaned_data["target"], self.cleaned_data["position"])
+        moved_node = self.instance.move_to(self.cleaned_data["target"], self.cleaned_data["position"])
         self._save_m2m()
-        return new_obj
+        return moved_node
 
 
 class MPTTModelAdmin(ModelAdmin):
@@ -167,7 +170,7 @@ class MPTTModelAdmin(ModelAdmin):
                 kwargs={"extra_context": {"title": "Insert node"}}
             ),
             path(
-                "move_to/", 
+                "<path:object_id>/move_to/", 
                 self.admin_site.admin_view(self.change_view), 
                 name="node-move",
                 kwargs={"extra_context": {"title": "Move node"}}

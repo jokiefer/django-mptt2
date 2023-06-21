@@ -268,3 +268,4 @@ class TreeManager(Manager):
         node.mptt_depth -= depth_change
         node.mptt_parent = parent
         node.save()
+        return node

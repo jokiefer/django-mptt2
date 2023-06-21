@@ -29,16 +29,34 @@
 
                 // Element dragging ended
                 onEnd: function (/**Event*/evt) {
+                    console.log(evt);
+                    const sourceNodeId = evt.item.dataset.nodeId;
+                    const payload = {
+                        "target": undefined,
+                        "position": undefined,
+                    }
                     if (evt.newIndex == 0) {
                         // first child of dataset.targetId
                         console.log("first child of ", evt.to.dataset.targetId);
+                        payload.target = evt.to.dataset.targetId;
+                        payload.position = "first-child";
                     } else if (evt.newIndex == evt.to.children.length - 1) {
                         // last child of dataset.targetId
                         console.log("last child of ", evt.to.dataset.targetId);
+                        payload.target = evt.to.dataset.targetId;
+                        payload.position = "last-child";
                     } else {
                         const leftSibling = evt.to.children[evt.newIndex - 1]
                         console.log("right of ", leftSibling.dataset.nodeId);
+                        payload.target = leftSibling.dataset.targetId;
+                        payload.position = "right";
                     }
+
+                    // quick and dirty post to use django default behaviour
+                    document.body.innerHTML += '<form id="dynForm" action="' + document.URL + sourceNodeId + "/move_to/" + '" method="post">{% csrf_token %}<input type="hidden" name="target" value="' + payload.target + '"><input type="hidden" name="position" value="' + payload.position + '"></form>';
+                    document.getElementById("dynForm").submit();
+
+
                 },
             });
         });
