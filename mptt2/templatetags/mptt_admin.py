@@ -37,7 +37,13 @@ class HtmlTag:
 
 
 def build_html_node(node):
-    html_node = HtmlTag(tag="div", attrs={"class": "list-group-item"})
+    html_node = HtmlTag(
+        tag="div", 
+        attrs={
+            "class": "list-group-item",
+            "data-node-id": node.pk
+        }
+    )
     level_string = "".join("-" for _ in range(node.mptt_depth))
     html_node.append_children(f'{level_string} {escape(node)}')
     return html_node
@@ -48,12 +54,9 @@ def draggable_tree(nodes):
     current_tree: Tree = None
     node: Node = None  # only to provide type hints
     subtree_container = None
-    #last_node_container = None
 
     last_node: Node = None
-    last_node_html_container: HtmlTag = None
 
-    html_container_registry = {}
 
     nodes_list: List[Node] = list(nodes)
 
@@ -62,14 +65,20 @@ def draggable_tree(nodes):
         if node.mptt_tree != current_tree:
             # new tree
             current_tree = node.mptt_tree
-            subtree_container = HtmlTag(tag="div", attrs={"id": f'tree-id-{current_tree.pk}', "class": "nested-sortable"})
+            subtree_container = HtmlTag(
+                tag="div", 
+                attrs={
+                    "id": f'tree-id-{current_tree.pk}', 
+                    "class": "nested-sortable",
+                    "data-target-id": node.pk,
+                    }
+                )
             html_trees.append(subtree_container)
             last_node = node
 
         if node.mptt_depth < last_node.mptt_depth:
             # upstairs in the tree
-            # TODO: get correct subtree_container for this node
-            for x in range(last_node.mptt_depth-node.mptt_depth):
+            for _ in range(last_node.mptt_depth-node.mptt_depth):
                 subtree_container = subtree_container.parent_container
             
         elif node.mptt_depth > last_node.mptt_depth:
@@ -83,22 +92,31 @@ def draggable_tree(nodes):
 
             subtree_container.append_children(html_node)
 
-            new_subtree_container = HtmlTag(tag="div", attrs={"class": "list-group nested-sortable"}, parent_container=subtree_container)
+            new_subtree_container = HtmlTag(
+                tag="div", 
+                attrs={
+                    "class": "list-group nested-sortable",
+                    "data-target-id": node.pk,
+                }, 
+                parent_container=subtree_container
+            )
             html_node.append_children(new_subtree_container)
             subtree_container = new_subtree_container
         else:
             # leave node
             html_node = build_html_node(node)
+            new_subtree_container = HtmlTag(
+                tag="div", 
+                attrs={
+                    "class": "list-group nested-sortable",
+                    "data-target-id": node.pk,
+                }, 
+                parent_container=subtree_container)
+            html_node.append_children(new_subtree_container)
             subtree_container.append_children(html_node)
 
         node.subtree_container = subtree_container
 
-        #     if last_node_container and last_node_container.parent_container:
-        #         last_node_container.parent_container.append_children(html_node)
-        #     else:
-        #         last_node_container = html_node
-
-        # last_node_container = html_node
         last_node = node
                 
 
