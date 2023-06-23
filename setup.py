@@ -1,19 +1,19 @@
 import os
 import re
+from distutils.command.build import build
 
-from setuptools import find_namespace_packages, setup
-
-name = 'django-mptt2'
-package = 'mptt2'
-description = 'Utilities for implementing a modified pre-order traversal tree (nested sets) in django.'
-url = 'https://github.com/jokiefer/django-mptt2'
-author = 'Jonas Kiefer'
-author_email = 'jonas.kiefer@live.com'
-license = 'MIT'
+from setuptools import setup
 
 
-with open("README.rst", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+class pre_build(build):
+    
+    def run(self):
+        from django.core.management.commands.compilemessages import \
+            compile_messages
+        compile_messages()
+
+        self.run_command("npm install")
+        build.run(self)
 
 
 def get_version(package):
@@ -25,38 +25,11 @@ def get_version(package):
                      init_py, re.MULTILINE).group(1)
 
 
-version = get_version(package)
+version = get_version("mptt2")
 
 setup(
-    name=name,
+    cmdclass={
+        'pre_build': pre_build
+    },
     version=version,
-    url=url,
-    license=license,
-    description=description,
-    long_description=long_description,
-    long_description_content_type='text/x-rst',
-    author=author,
-    author_email=author_email,
-    packages=[p for p in find_namespace_packages(
-        exclude=('tests*',)) if p.startswith(package)],
-    include_package_data=True,
-    install_requires=[
-        "django>=4.2,<4.3",
-    ],
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "Natural Language :: English",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Topic :: Internet :: WWW/HTTP",
-        "Environment :: Web Environment",
-        "Framework :: Django",
-        "Topic :: Software Development :: Libraries",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-    ],
-    python_requires='>=3.8',
 )

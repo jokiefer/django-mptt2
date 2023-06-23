@@ -1,4 +1,4 @@
-{% load i18n mptt_admin %}
+{% load mptt_admin static %}
 {% if result_hidden_fields %}
 <div class="hiddenfields">{# DIV for HTML validation #}
     {% for item in result_hidden_fields %}{{ item }}{% endfor %}
@@ -7,15 +7,11 @@
 
 {% draggable_tree cl.result_list %}
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-<link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css" rel="stylesheet">
-<script src=" https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js "></script>
+
+<script src="{% static 'mptt2/Sortable.min.js' %}"></script>
 
 <script>
-
     var trees = [].slice.call(document.querySelectorAll('[id*="tree-id"]'));
-
     trees.forEach((tree) => {
         var nestedSortables = [].slice.call(tree.querySelectorAll('.nested-sortable'));
         // Loop through each nested sortable element
@@ -29,37 +25,30 @@
 
                 // Element dragging ended
                 onEnd: function (/**Event*/evt) {
-                    console.log(evt);
-                    const sourceNodeId = evt.item.dataset.nodeId;
+                    const sourceNodeId = evt.item.dataset.targetId;
                     const payload = {
                         "target": undefined,
                         "position": undefined,
                     }
                     if (evt.newIndex == 0) {
                         // first child of dataset.targetId
-                        console.log("first child of ", evt.to.dataset.targetId);
                         payload.target = evt.to.dataset.targetId;
                         payload.position = "first-child";
                     } else if (evt.newIndex == evt.to.children.length - 1) {
                         // last child of dataset.targetId
-                        console.log("last child of ", evt.to.dataset.targetId);
                         payload.target = evt.to.dataset.targetId;
                         payload.position = "last-child";
                     } else {
                         const leftSibling = evt.to.children[evt.newIndex - 1]
-                        console.log("right of ", leftSibling.dataset.nodeId);
                         payload.target = leftSibling.dataset.targetId;
                         payload.position = "right";
                     }
-
                     // quick and dirty post to use django default behaviour
+                    // FIXME: get url by django template tag
                     document.body.innerHTML += '<form id="dynForm" action="' + document.URL + sourceNodeId + "/move_to/" + '" method="post">{% csrf_token %}<input type="hidden" name="target" value="' + payload.target + '"><input type="hidden" name="position" value="' + payload.position + '"></form>';
                     document.getElementById("dynForm").submit();
-
-
                 },
             });
         });
     });
-
 </script>

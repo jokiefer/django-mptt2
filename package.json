@@ -1,0 +1,9 @@
+{
+    "dependencies": {
+        "sortablejs": "^1.15.0",
+        "gulp": "^4.0.2"
+    },
+    "scripts": {
+        "install": "gulp"
+    }
+}

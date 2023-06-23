@@ -1,30 +1,23 @@
 
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from django.contrib.admin.options import ModelAdmin
-from django.core.exceptions import PermissionDenied
-from django.db import models, router, transaction
 from django.forms.fields import ChoiceField
-from django.forms.models import ModelChoiceField, ModelForm, modelform_factory
+from django.forms.models import ModelChoiceField, ModelForm
 from django.http.request import HttpRequest
-from django.template.response import TemplateResponse
 from django.urls.conf import path
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 
 from mptt2.enums import Position
-from mptt2.exceptions import MethodNotAllowed
 
 csrf_protect_m = method_decorator(csrf_protect)
 from django.contrib.admin.decorators import display
-from django.contrib.admin.sites import site
-from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.admin.widgets import AdminTextInputWidget
 from django.urls import reverse
-from django.utils.html import format_html
-from django.views.generic.edit import FormView
+from django.utils.html import format_html, mark_safe
 
 
 class InsertAtForm(ModelForm):
@@ -108,33 +101,16 @@ class MPTTModelAdmin(ModelAdmin):
     insert_at_form = InsertAtForm
     move_to_form = MoveToForm
 
-    @display(description=_("Move"))
-    def move_node(self, obj):
-        if self.has_change_permission(request=self.request, obj=obj):
-            return format_html(
-                f'<span data-id="{obj.id}" data-lft="{obj.mptt_lft}" data-rgt="{obj.mptt_rgt}" data-depth="{obj.mptt_depth}" data-has-leafs="{str(obj.has_leafs).lower()}" data-depth="{obj.mptt_depth}" data-tree="{obj.mptt_tree_id}" class="mdi mdi-cursor-move"></span>'
-            )
-
-    @display(description=_("Insert"))
-    def insert_links(self, obj):
-        return format_html(
-            '<div class="submit-row">'
-            f'<a class="button" href="{reverse("admin:node-insert")}?target={obj.pk}&position=last-child">Last Child</a>'
-            f'<a class="button" href="{reverse("admin:node-insert")}?target={obj.pk}&position=first-child">First Child</a>'
-            f'<a class="button" href="{reverse("admin:node-insert")}?target={obj.pk}&position=left">Left</a>'
-            f'<a class="button" href="{reverse("admin:node-insert")}?target={obj.pk}&position=right">Right</a>'
-            '</div>'
-        )
 
     @display(description=_("Delete"))
     def delete_link(self, obj):
         if self.has_delete_permission(request=self.request, obj=obj):
-            return format_html(f'<a class="button" href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_delete", args=(obj.id,))}">Delete</a>')
+            return format_html(f'<a class="deletelink" href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_delete", args=(obj.id,))}">'f"{_('Delete')}"'</a>')
 
 
     def tree_node_string(self, obj):
-        level_string = "".join("-" for _ in range(obj.mptt_depth))
-        return f"{level_string} {obj}"
+        level_string = "".join("&nbsp;&nbsp;" for _ in range(obj.mptt_depth))
+        return mark_safe(f"{level_string}&#x2022; {obj}")
    
 
     def get_actions(self, request: HttpRequest) -> OrderedDict[Any, Any]:
@@ -153,10 +129,6 @@ class MPTTModelAdmin(ModelAdmin):
         if "__str__" in list_display:
             list_display[list_display.index("__str__")] = self.tree_node_string
         
-        if self.has_add_permission(request=request):
-            list_display.append("insert_links")
-
-        list_display.insert(1, "move_node")
         list_display.append("delete_link")
         return list_display
 
@@ -201,4 +173,13 @@ class MPTTModelAdmin(ModelAdmin):
         """Adds request attribute to this admin view"""
         self.request = request
         return super().changelist_view(request, extra_context=extra_context)
-    
+
+
+
+class MPTTDraggableModelAdmin(MPTTModelAdmin):
+    """
+    A basic admin class that displays tree items according to their position in
+    the tree.  No extra editing functionality beyond what Django admin normally
+    offers.
+    """
+    change_list_template = "admin/mptt_draggable_change_list.html"

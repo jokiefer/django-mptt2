@@ -22,12 +22,13 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",  # for django admin pages
 ]
 
-STATIC_URL = "/static/"
+STATIC_URL = "static/"
 
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

@@ -3,13 +3,16 @@ from typing import Dict, List
 
 from django import template
 from django.contrib.admin.templatetags.admin_list import result_list
+from django.urls import reverse
+from django.utils.html import escape, mark_safe
+from django.utils.translation import gettext_lazy as _
+
+from mptt2.models import Node, Tree
 
 register = template.Library()
 register.inclusion_tag('admin/mptt_change_list_results.html')(result_list)
 
-from django.utils.html import escape, mark_safe
 
-from mptt2.models import Node, Tree
 
 
 class HtmlTag:
@@ -35,21 +38,35 @@ class HtmlTag:
         content += f'</{self.tag}>'
         return mark_safe(content)
 
+def build_delete_node_button(node, request):
+    if request.user.has_perm(f"{node.__class__._meta.app_label}.delete_{node._meta.model_name.lower()}", obj=node):
+        delete_link = HtmlTag(
+            tag="a", 
+            attrs={
+                "class": "deletelink",
+                "href": reverse(f"admin:{node._meta.app_label}_{node._meta.model_name}_delete", args=(node.id,))
+            }
+        )
+        delete_link.append_children(
+            _("delete")
+        )
+        return delete_link
+    return ""
 
-def build_html_node(node):
+
+def build_html_node(node, request):
     html_node = HtmlTag(
-        tag="div", 
+        tag="li", 
         attrs={
-            "class": "list-group-item",
-            "data-node-id": node.pk
+            #"class": "list-group-item",
+            "data-target-id": node.pk,
         }
     )
-    level_string = "".join("-" for _ in range(node.mptt_depth))
-    html_node.append_children(f'{level_string} {escape(node)}')
+    html_node.append_children(f'{escape(node)} {mark_safe(build_delete_node_button(node, request))}')
     return html_node
 
-@register.simple_tag
-def draggable_tree(nodes):
+@register.simple_tag(takes_context=True)
+def draggable_tree(context, nodes):
     html_trees = []
     current_tree: Tree = None
     node: Node = None  # only to provide type hints
@@ -66,7 +83,7 @@ def draggable_tree(nodes):
             # new tree
             current_tree = node.mptt_tree
             subtree_container = HtmlTag(
-                tag="div", 
+                tag="ul", 
                 attrs={
                     "id": f'tree-id-{current_tree.pk}', 
                     "class": "nested-sortable",
@@ -81,21 +98,16 @@ def draggable_tree(nodes):
             for _ in range(last_node.mptt_depth-node.mptt_depth):
                 subtree_container = subtree_container.parent_container
             
-        elif node.mptt_depth > last_node.mptt_depth:
-            # downstair
-            pass
-
-
         if node.has_leafs:
             # new subtree
-            html_node = build_html_node(node)
+            html_node = build_html_node(node, context.request)
 
             subtree_container.append_children(html_node)
 
             new_subtree_container = HtmlTag(
-                tag="div", 
+                tag="ul", 
                 attrs={
-                    "class": "list-group nested-sortable",
+                    "class": "nested-sortable",
                     "data-target-id": node.pk,
                 }, 
                 parent_container=subtree_container
@@ -104,11 +116,11 @@ def draggable_tree(nodes):
             subtree_container = new_subtree_container
         else:
             # leave node
-            html_node = build_html_node(node)
+            html_node = build_html_node(node, context.request)
             new_subtree_container = HtmlTag(
-                tag="div", 
+                tag="ul", 
                 attrs={
-                    "class": "list-group nested-sortable",
+                    "class": "nested-sortable",
                     "data-target-id": node.pk,
                 }, 
                 parent_container=subtree_container)
