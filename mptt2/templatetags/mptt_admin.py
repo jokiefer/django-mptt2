@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from mptt2.models import Node, Tree
 
+
 register = template.Library()
 register.inclusion_tag('admin/mptt_change_list_results.html')(result_list)
 
@@ -28,7 +29,7 @@ class HtmlTag:
     def attrs_to_string(self):
         attrs_str = ""
         for key, value in self.attrs.items():
-            attrs_str += f'{key}="{value}"'
+            attrs_str += f'{" " if attrs_str else ""}{key}="{value}"'
         return attrs_str
 
     def __str__(self):
@@ -39,7 +40,8 @@ class HtmlTag:
         return mark_safe(content)
 
 def build_delete_node_button(node, request):
-    if request.user.has_perm(f"{node.__class__._meta.app_label}.delete_{node._meta.model_name.lower()}", obj=node):
+    # FIXME: for now we can't check object base permissions with has_perm('perm', node), cause django's default auth backend will always fail if obj!= None.
+    if request.user.has_perm(f"{node.__class__._meta.app_label}.delete_{node._meta.model_name.lower()}"):
         delete_link = HtmlTag(
             tag="a", 
             attrs={
