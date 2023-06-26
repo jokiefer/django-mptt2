@@ -40,7 +40,7 @@ class TestMpttAdminList(AdminTestBasicClass):
         self.assertTemplateUsed(self.template)
 
         # proof tree node string
-        self.assertContains(response, '<a href="/admin/tests/othernode/2/change/">&nbsp;&nbsp;&#x2022; pk 2 | tree 1 | lft 2 | rgt 3</a>')
+        self.assertContains(response, self.link_column)
         # proof perm depending buttons
         self.assertNotContains(response, self.delete_link)
         self.assertNotContains(response, self.insert_link)
