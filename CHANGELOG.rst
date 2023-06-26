@@ -3,14 +3,38 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
+and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-[0.1.1] - 2023-06-08
--------------------------
+
+[0.2.0] - 2023-06-26
+--------------------
+
+Added
+~~~~~
+
+* implement a mptt and draggable django admin site. It uses `SortableJS <https://github.com/SortableJS/Sortable>`_ to recognize drag events.
+* implement 
+
+
+Changed
+~~~~~~~
+
+* removes the `queryset.delete()` function from tree managers. In all mptt based admin sites the global possibility to delete objects is replaced by using the delete function on the nodes. Cause of the parent child relation and there cascading delete behaviour all descendants of a node are deleted as well. 
+
 
 Fixed
 ~~~~~
+
+* ancestors right value was not updated correctly while running `insert_at` method for last and first child. Fixed by adding the correct `AncestorQuery` to `_calculate_filter_for_insert` function.
+
+
+[0.1.1] - 2023-06-08
+--------------------
+
+Fixed
+~~~~~
+
 * manager access for instance subfunctions: `get_children`, `get_descendants`, `get_ancestors`, `get_family`, `get_siblings`, `move_to`, `insert_at`
 
 [0.1.0] - 2023-04-29

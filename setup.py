@@ -1,20 +1,17 @@
 import os
 import re
-from distutils.command.build import build
+from subprocess import check_call
 
 from setuptools import setup
+from setuptools.command.build import build
 
 
 class pre_build(build):
     
     def run(self):
-        from django.core.management.commands.compilemessages import \
-            compile_messages
-        compile_messages()
-
-        self.run_command("npm install")
+        check_call("python manage.py compilemessages".split())
+        check_call("npm install".split())
         build.run(self)
-
 
 def get_version(package):
     """
