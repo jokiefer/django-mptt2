@@ -1,9 +1,7 @@
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import Client, TestCase
-from playwright.sync_api import sync_playwright
 
 
 class TestMpttAdminList(TestCase):
@@ -108,29 +106,3 @@ class TestMoveForm(TestCase):
     pass
     # TODO
 
-
-class TestDragAndDrop(StaticLiveServerTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.playwright = sync_playwright().start()
-        cls.browser = cls.playwright.chromium.launch()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.browser.close()
-        cls.playwright.stop()
-        super().tearDownClass()
-
-    def test_drag_node_five(self):
-        pass
-        # TODO: run playwright install infront of testing
-        # TODO:
-        # page = self.browser.newPage()
-        # page.goto('%s%s' % (self.live_server_url, '/login/'))
-        # page.fill('#username', 'myuser')
-        # page.fill('#password', 'secret')
-        # page.click('text=Log in')
-        # assert page.url == '%s%s' % (self.live_server_url, '/profile/')
-        # page.close()
