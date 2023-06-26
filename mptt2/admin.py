@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_protect
 
 from mptt2.enums import Position
 
+
 csrf_protect_m = method_decorator(csrf_protect)
 from django.contrib.admin.decorators import display
 from django.contrib.admin.widgets import AdminTextInputWidget
@@ -107,6 +108,11 @@ class MPTTModelAdmin(ModelAdmin):
         if self.has_delete_permission(request=self.request, obj=obj):
             return format_html(f'<a class="deletelink" href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_delete", args=(obj.id,))}">'f"{_('Delete')}"'</a>')
 
+    @display(description=_("Move"))
+    def move_link(self, obj):
+        if self.has_delete_permission(request=self.request, obj=obj):
+            return format_html(f'<a href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_move", args=(obj.id,))}">'f"&#8982; {_('Move')}"'</a>')
+
 
     def tree_node_string(self, obj):
         level_string = "".join("&nbsp;&nbsp;" for _ in range(obj.mptt_depth))
@@ -130,6 +136,7 @@ class MPTTModelAdmin(ModelAdmin):
             list_display[list_display.index("__str__")] = self.tree_node_string
         
         list_display.append("delete_link")
+        list_display.append("move_link")
         return list_display
 
     def get_urls(self):
@@ -138,13 +145,13 @@ class MPTTModelAdmin(ModelAdmin):
             path(
                 "insert_at/", 
                 self.admin_site.admin_view(self.add_view), 
-                name="node-insert",
+                name=f"{self.model._meta.app_label}_{self.model._meta.model_name}_insert",
                 kwargs={"extra_context": {"title": "Insert node"}}
             ),
             path(
                 "<path:object_id>/move_to/", 
                 self.admin_site.admin_view(self.change_view), 
-                name="node-move",
+                name=f"{self.model._meta.app_label}_{self.model._meta.model_name}_move",
                 kwargs={"extra_context": {"title": "Move node"}}
             )
         ]
@@ -172,6 +179,10 @@ class MPTTModelAdmin(ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         """Adds request attribute to this admin view"""
         self.request = request
+        if not extra_context:
+            extra_context = {}
+        extra_context.update({"can_insert": True if self.has_add_permission(request) else False})
+        
         return super().changelist_view(request, extra_context=extra_context)
 
 

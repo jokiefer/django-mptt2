@@ -27,7 +27,8 @@ Fixed
 ~~~~~
 
 * ancestors right value was not updated correctly while running `insert_at` method for last and first child. Fixed by adding the correct `AncestorQuery` to `_calculate_filter_for_insert` function.
-
+* implement a unique checkconstraint name to fix error: 'rgt_gt_lft' is not unique among models. 
+* implement a unique related_name to fix error: Add or change a related_name argument to the definition for mptt_tree
 
 [0.1.1] - 2023-06-08
 --------------------

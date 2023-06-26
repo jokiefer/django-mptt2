@@ -12,8 +12,14 @@ from django.utils.translation import gettext as _
 from mptt2.compatibility import violation_error_message_kwargs
 from mptt2.enums import Position
 from mptt2.managers import TreeManager
-from mptt2.query import (AncestorsQuery, ChildrenQuery, DescendantsQuery,
-                         FamilyQuery, RootQuery, SiblingsQuery)
+from mptt2.query import (
+    AncestorsQuery,
+    ChildrenQuery,
+    DescendantsQuery,
+    FamilyQuery,
+    RootQuery,
+    SiblingsQuery,
+)
 
 
 class Tree(Model):
@@ -55,8 +61,8 @@ class Node(Model):
         on_delete=CASCADE,
         verbose_name=_("tree"),
         help_text=_("The unique tree, where this node is part of"),
-        related_name="nodes",
-        related_query_name="node",
+        related_name="%(app_label)s_%(class)s_nodes",
+        related_query_name="%(app_label)s_%(class)s_node",
         editable=False
     )
     mptt_lft = PositiveIntegerField(
@@ -86,7 +92,7 @@ class Node(Model):
         constraints = [
             CheckConstraint(
                 check=Q(mptt_rgt__gt=F("mptt_lft")),
-                name="rgt_gt_lft",
+                name="%(app_label)s_%(class)s_rgt_gt_lft",
                 **violation_error_message_kwargs()
             ),
             # TODO: add unique constraint for lft and rgt fields
