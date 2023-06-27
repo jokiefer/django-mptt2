@@ -5,15 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Django",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "runserver"
+            ]
+        },
+        {
             "name": "Python: Django test",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/manage.py",
             "console": "integratedTerminal",
+            "justMyCode": false,
             "args": [
                 "test"
             ]
-            
         }
     ]
 }

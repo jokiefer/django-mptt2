@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load admin_list i18n %}
+
+{% block object-tools-items %}
+{% if can_insert %}
+<li>
+    <a href="insert_at/" class="addlink">{% translate "insert node" %}</a>
+</li>
+{% endif %}
+
+{{ block.super }}
+
+{% endblock %}

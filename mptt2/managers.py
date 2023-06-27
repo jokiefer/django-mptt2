@@ -10,14 +10,17 @@ from django.utils.translation import gettext as _
 from mptt2.enums import Position
 from mptt2.exceptions import InvalidInsert, InvalidMove
 from mptt2.expressions import Depth, Left, Right
-from mptt2.query import (DescendantsQuery, RightSiblingsWithDescendants,
-                         RootQuery, SameNodeQuery, TreeQuerySet)
+from mptt2.query import (AncestorsQuery, DescendantsQuery,
+                         RightSiblingsWithDescendants, RootQuery,
+                         SameNodeQuery, TreeQuerySet)
 
 
 class TreeManager(Manager):
 
-    def get_queryset(self) -> QuerySet[TreeQuerySet]:
-        return TreeQuerySet(self.model, using=self._db)
+    queryset_class = TreeQuerySet
+
+    def get_queryset(self) -> QuerySet[queryset_class]:
+        return self.queryset_class(self.model, using=self._db)
 
     def _calculate_node_mptt_values_for_insert(self, node, target, position):
         node.mptt_tree = target.mptt_tree
@@ -47,7 +50,8 @@ class TreeManager(Manager):
             return (
                 RootQuery(of=target) |
                 RightSiblingsWithDescendants(
-                    of=target, include_self=True if position == Position.LAST_CHILD else False)
+                    of=target, include_self=True if position == Position.LAST_CHILD else False)  |
+                AncestorsQuery(of=target)
             )
         else:
             return (
@@ -60,7 +64,7 @@ class TreeManager(Manager):
         condition = ~RootQuery(of=target)
 
         if position in [Position.LAST_CHILD, Position.FIRST_CHILD]:
-            condition &= ~SameNodeQuery(of=target)
+            condition &= ~SameNodeQuery(of=target) & ~ AncestorsQuery(of=target)
 
         return {
             "mptt_lft": Case(
@@ -264,3 +268,4 @@ class TreeManager(Manager):
         node.mptt_depth -= depth_change
         node.mptt_parent = parent
         node.save()
+        return node

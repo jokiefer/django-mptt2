@@ -11,3 +11,7 @@ class InvalidInsert(Exception):
     For example, attempted to make a node a sibling of the root node.
     """
     pass
+
+class MethodNotAllowed(Exception):
+    """The requested method is not allowed"""
+    pass

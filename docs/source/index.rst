@@ -11,6 +11,7 @@ Contents
 
    install
    tutorial
+   admin
    development
    changelog
    docstrings

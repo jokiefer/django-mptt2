@@ -1,5 +1,5 @@
 from django.db.models import Model
-from django.db.models.constraints import CheckConstraint
+from django.db.models.constraints import CheckConstraint, UniqueConstraint
 from django.db.models.deletion import CASCADE
 from django.db.models.expressions import F
 from django.db.models.fields import PositiveIntegerField
@@ -12,8 +12,14 @@ from django.utils.translation import gettext as _
 from mptt2.compatibility import violation_error_message_kwargs
 from mptt2.enums import Position
 from mptt2.managers import TreeManager
-from mptt2.query import (AncestorsQuery, ChildrenQuery, DescendantsQuery,
-                         FamilyQuery, RootQuery, SiblingsQuery)
+from mptt2.query import (
+    AncestorsQuery,
+    ChildrenQuery,
+    DescendantsQuery,
+    FamilyQuery,
+    RootQuery,
+    SiblingsQuery,
+)
 
 
 class Tree(Model):
@@ -55,8 +61,9 @@ class Node(Model):
         on_delete=CASCADE,
         verbose_name=_("tree"),
         help_text=_("The unique tree, where this node is part of"),
-        related_name="nodes",
-        related_query_name="node"
+        related_name="%(app_label)s_%(class)s_nodes",
+        related_query_name="%(app_label)s_%(class)s_node",
+        editable=False
     )
     mptt_lft = PositiveIntegerField(
         editable=False,
@@ -85,9 +92,11 @@ class Node(Model):
         constraints = [
             CheckConstraint(
                 check=Q(mptt_rgt__gt=F("mptt_lft")),
-                name="rgt_gt_lft",
+                name="%(app_label)s_%(class)s_rgt_gt_lft",
                 **violation_error_message_kwargs()
-            )
+            ),
+            # TODO: add unique constraint for lft and rgt fields
+            # UniqueConstraint(fields=["mptt_tree_id", "mptt_lft"], name="unique_lft")
         ]
 
     def __str__(self) -> str:
@@ -234,7 +243,7 @@ class Node(Model):
     @ property
     def has_leafs(self) -> bool:
         """returns true if this node has leafs (descendants)"""
-        return self.mptt_rgt - self.mptt_lft > 0
+        return self.mptt_rgt - self.mptt_lft > 1
 
     @ property
     def descendant_count(self) -> int:

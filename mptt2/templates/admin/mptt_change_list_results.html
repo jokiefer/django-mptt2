@@ -1,0 +1,54 @@
+{% load mptt_admin static %}
+{% if result_hidden_fields %}
+<div class="hiddenfields">{# DIV for HTML validation #}
+    {% for item in result_hidden_fields %}{{ item }}{% endfor %}
+</div>
+{% endif %}
+
+{% draggable_tree cl.result_list %}
+
+
+<script src="{% static 'mptt2/Sortable.min.js' %}"></script>
+
+<script>
+    var trees = [].slice.call(document.querySelectorAll('[id*="tree-id"]'));
+    trees.forEach((tree) => {
+        var nestedSortables = [].slice.call(tree.querySelectorAll('.nested-sortable'));
+        // Loop through each nested sortable element
+
+        nestedSortables.forEach((nested) => {
+            new Sortable(nested, {
+                group: tree.id, // is the id of the sourounding html container. Should be the tree id to allow only dragging nodes inside current tree
+                animation: 150,
+                fallbackOnBody: true,
+                swapThreshold: 0.25,
+
+                // Element dragging ended
+                onEnd: function (/**Event*/evt) {
+                    const sourceNodeId = evt.item.dataset.targetId;
+                    const payload = {
+                        "target": undefined,
+                        "position": undefined,
+                    }
+                    if (evt.newIndex == 0) {
+                        // first child of dataset.targetId
+                        payload.target = evt.to.dataset.targetId;
+                        payload.position = "first-child";
+                    } else if (evt.newIndex == evt.to.children.length - 1) {
+                        // last child of dataset.targetId
+                        payload.target = evt.to.dataset.targetId;
+                        payload.position = "last-child";
+                    } else {
+                        const leftSibling = evt.to.children[evt.newIndex - 1]
+                        payload.target = leftSibling.dataset.targetId;
+                        payload.position = "right";
+                    }
+                    // quick and dirty post to use django default behaviour
+                    // FIXME: get url by django template tag
+                    document.body.innerHTML += '<form id="dynForm" action="' + document.URL + sourceNodeId + "/move_to/" + '" method="post">{% csrf_token %}<input type="hidden" name="target" value="' + payload.target + '"><input type="hidden" name="position" value="' + payload.position + '"></form>';
+                    document.getElementById("dynForm").submit();
+                },
+            });
+        });
+    });
+</script>
