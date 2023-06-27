@@ -1,7 +1,3 @@
-
-from collections import OrderedDict
-from typing import Any
-
 from django.contrib.admin.options import ModelAdmin
 from django.forms.fields import ChoiceField
 from django.forms.models import ModelChoiceField, ModelForm
@@ -173,7 +169,7 @@ class MPTTModelAdmin(ModelAdmin):
     def is_move_to_action(self, request):
         return "move_to" in request.path
 
-    def get_form(self, request: Any, obj: Any | None = ..., change: bool = ..., **kwargs: Any) -> Any:
+    def get_form(self, request, obj=None, change=False, **kwargs):
         if self.is_insert_at_action(request):
             # if request.method == "GET":
             fields = kwargs.pop("fields")
@@ -183,7 +179,6 @@ class MPTTModelAdmin(ModelAdmin):
                 # So just pass in __all__ fields, so all fields will be excluded. ¯\_(ツ)_/¯
                 fields = '__all__'
             return super().get_form(request, obj, change, form=self.get_insert_at_form(), fields=fields, **kwargs)
-            #return super().get_form(request, obj, change, form=self.get_insert_at_form(), **kwargs)
         elif self.is_move_to_action(request):
             if request.method == "GET":
                 fields = kwargs.pop("fields")

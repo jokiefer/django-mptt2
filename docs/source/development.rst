@@ -26,6 +26,13 @@ To install all dependencies to contribute to this project run the command below:
 
     $ pip install -r requirements.txt
 
+Fullify playwright installation
+
+.. code-block:: bash
+
+    $ playwright install
+
+
 .. note::
 
     Run the above command from the root of the project folder.

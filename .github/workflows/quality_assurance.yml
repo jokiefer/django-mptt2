@@ -30,5 +30,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install tox
+          playwright install
       - name: Run tox targets for ${{ matrix.python-version }}
         run: tox run -f py$(echo ${{ matrix.python-version }} | tr -d .)
