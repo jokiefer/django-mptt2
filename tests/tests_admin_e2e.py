@@ -1,6 +1,8 @@
+import os
+
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.webdriver import WebDriver
+from django.test import Client
+from playwright.sync_api import sync_playwright
 
 
 class TestDragAndDrop(StaticLiveServerTestCase):
@@ -9,31 +11,44 @@ class TestDragAndDrop(StaticLiveServerTestCase):
 
     @classmethod
     def setUpClass(cls):
+        os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
         super().setUpClass()
-        cls.selenium = WebDriver()
-        cls.selenium.implicitly_wait(10)
+        cls.playwright = sync_playwright().start()
+        cls.browser = cls.playwright.chromium.launch()
 
     @classmethod
     def tearDownClass(cls):
-        cls.selenium.quit()
         super().tearDownClass()
+        cls.browser.close()
+        cls.playwright.stop()
+
+    def setUp(self):
+        super().setUp()
+        client = Client()
+        client.login(username="superuser", password='12345678') #Native django test client
+        morsel = client.cookies['sessionid']
+
+        cookie_dict = {
+            "name": morsel.key,
+            "value": morsel.value,
+            "url": self.live_server_url,
+        }
+        
+        self.context = self.browser.new_context()
+        self.context.add_cookies([cookie_dict])
+        
 
     def test_drag_node_five_to_node_three(self):
-        self.client.login(username="simpleuser", password='12345678') #Native django test client
-        cookie = self.client.cookies['sessionid']
-        self.selenium.add_cookie({'name': 'sessionid', 'value': cookie.value, 'secure': False, 'path': '/'})
-        self.selenium.get(f"{self.live_server_url}/admin/tests/simplenode/")
-        
-        node_five = self.selenium.find_element(By.CSS_SELECTOR, '[data-target-id="5"]')
+        # just a simple e2e test to figure out static sortablejs lib is provided as static file and drag and drop is principle working
+        page = self.context.new_page()
+        page.goto(f"{self.live_server_url}/admin/tests/simplenode/")
 
+        page.wait_for_selector('text=Select simple node to change')
 
-        node_three = self.selenium.find_element(By.CSS_SELECTOR, '[data-target-id="3"]')
+        node_five = page.locator('li[data-target-id="5"]')
 
-        # Actions act=new Actions(driver);
-        # act.dragAndDrop(From, To).build().perform();							
+        node_three = page.locator('li[data-target-id="2"]')
 
-        # username_input = self.selenium.find_element(By.NAME, "username")
-        # username_input.send_keys("myuser")
-        # password_input = self.selenium.find_element(By.NAME, "password")
-        # password_input.send_keys("secret")
-        # self.selenium.find_element(By.XPATH, '//input[@value="Log in"]').click()
+        node_five.drag_to(target=node_three, target_position={"x": 0, "y": 1}, )
+
+        page.wait_for_selector('text=pk 5 | tree 1 | lft 2 | rgt 3')
