@@ -123,7 +123,7 @@ class MPTTModelAdmin(ModelAdmin):
         return mark_safe(f"{level_string}&#x2022; {obj}")
    
 
-    def get_actions(self, request: HttpRequest) -> OrderedDict[Any, Any]:
+    def get_actions(self, request: HttpRequest):
         actions = super().get_actions(request)
         if "delete_selected" in actions:
             # queryset.delete() is not implemented for now.
