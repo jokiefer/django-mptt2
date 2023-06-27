@@ -32,3 +32,8 @@ jobs:
           pip install tox
       - name: Run tox targets for ${{ matrix.python-version }}
         run: tox run -f py$(echo ${{ matrix.python-version }} | tr -d .)
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: e2e-screenshots
+          path: screenshots
