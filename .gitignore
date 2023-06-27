@@ -131,3 +131,5 @@ dmypy.json
 **/node_modules
 
 **/static/mptt2/
+
+**/screenshots/

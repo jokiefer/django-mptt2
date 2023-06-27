@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import Client
@@ -30,16 +31,22 @@ class TestDragAndDrop(StaticLiveServerTestCase):
             "value": morsel.value,
             "url": self.live_server_url,
         }
+        self.is_failed = False
+        self.current_browser = ""
         
     def tearDown(self):
         super().tearDown()
+        now = datetime.now()
+        self.browser.contexts[0].pages[0].screenshot(path=f'./screenshots/{now.strftime("%H_%M_%S")}_test_result_{self.current_browser}.png')
         self.browser.close()
 
     def test_chromium(self):
+        self.current_browser = "chromium"
         self.browser = self.playwright.chromium.launch()
         self._test_drag_node_five_to_node_three()
 
     def test_firefox(self):
+        self.current_browser = "firefox"
         self.browser = self.playwright.firefox.launch()
         self._test_drag_node_five_to_node_three()
 
