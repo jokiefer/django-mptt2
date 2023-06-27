@@ -4,7 +4,7 @@ from django.contrib.auth.models import Permission
 from django.test import Client, TestCase
 
 
-class TestMpttAdminList(TestCase):
+class TestMpttAdminListView(TestCase):
 
     fixtures = ["auth.json", "simple_nodes.json", "other_nodes.json"]
 
@@ -22,7 +22,6 @@ class TestMpttAdminList(TestCase):
 
     def setUp(self):
         self.client = Client()
-        #self.client.login(username="fred", password="secret")
         self.simple_user = get_user_model().objects.get(username='simpleuser')
         self.client.force_login(self.simple_user)
 
@@ -84,7 +83,7 @@ class TestMpttAdminList(TestCase):
 
 
 
-class TestMpttDraggableList(TestMpttAdminList):
+class TestMpttDraggableListView(TestMpttAdminListView):
 
     base_url = "/admin/tests/simplenode/"
     template = "admin/mptt_draggable_change_list.html"
@@ -97,12 +96,68 @@ class TestMpttDraggableList(TestMpttAdminList):
     delete_permission = "delete_simplenode"
 
 
-class TestInsertForm(TestCase):
-    pass
-    # TODO
+class TestInsertFormView(TestCase):
+    fixtures = ["auth.json", "simple_nodes.json", "other_nodes.json"]
+
+    base_url = "/admin/tests/othernode/insert_at/"
+    add_permission = "add_othernode"
 
 
-class TestMoveForm(TestCase):
-    pass
-    # TODO
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.simple_user = get_user_model().objects.get(username='simpleuser')
+        self.client.force_login(self.simple_user)
+    
+    def test_get_without_permissions(self): 
+        self.response = self.client.get(self.base_url)
+        self.assertEqual(self.response.status_code, 403)
+
+    def test_get_with_permissions(self):
+        self.simple_user.user_permissions.add(Permission.objects.get(codename=self.add_permission))
+        self.response = self.client.get(self.base_url)
+        self.assertEqual(self.response.status_code, 200)
+
+    def test_post_without_permissions(self):
+        self.response = self.client.post(self.base_url, data={})
+        self.assertEqual(self.response.status_code, 403)
+
+    def test_post_with_permissions(self):
+        self.simple_user.user_permissions.add(Permission.objects.get(codename=self.add_permission))
+        self.response = self.client.post(self.base_url, data={"title": "new node","target": "5", "position": "first-child"}, follow=True)
+        self.assertEqual(self.response.status_code, 200)
+        self.assertContains(self.response, '<li class="success">The other node “pk 22 | tree 1 | lft 8 | rgt 9” was added successfully.</li>')
+
+
+class TestMoveFormView(TestCase):
+    fixtures = ["auth.json", "simple_nodes.json", "other_nodes.json"]
+
+    base_url = "/admin/tests/othernode/3/move_to/"
+    change_permission = "change_othernode"
+
+
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.simple_user = get_user_model().objects.get(username='simpleuser')
+        self.client.force_login(self.simple_user)
+    
+    def test_get_without_permissions(self): 
+        self.response = self.client.get(self.base_url)
+        self.assertEqual(self.response.status_code, 403)
+
+    def test_get_with_permissions(self):
+        self.simple_user.user_permissions.add(Permission.objects.get(codename=self.change_permission))
+        self.response = self.client.get(self.base_url)
+        self.assertEqual(self.response.status_code, 200)
+
+    def test_post_without_permissions(self):
+        self.response = self.client.post(self.base_url, data={})
+        self.assertEqual(self.response.status_code, 403)
+
+    def test_post_with_permissions(self):
+        self.simple_user.user_permissions.add(Permission.objects.get(codename=self.change_permission))
+        self.response = self.client.post(self.base_url, data={"target": "5", "position": "first-child"}, follow=True)
+        self.assertEqual(self.response.status_code, 200)
+        self.assertContains(self.response, '<li class="success">The other node “<a href="/admin/tests/othernode/3/move_to/">pk 3 | tree 1 | lft 6 | rgt 7</a>” was changed successfully.</li>')
 

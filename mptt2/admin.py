@@ -23,9 +23,13 @@ from django.utils.html import format_html, mark_safe
 
 class InsertAtForm(ModelForm):
 
+
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        
+        super().__init__(*args, **kwargs)        
+        # dynamic initial the queryset based on the current model class
         self.fields["target"].queryset = self.instance.__class__.objects.all()
+
 
     target = ModelChoiceField(
         queryset=None, 
@@ -171,10 +175,26 @@ class MPTTModelAdmin(ModelAdmin):
 
     def get_form(self, request: Any, obj: Any | None = ..., change: bool = ..., **kwargs: Any) -> Any:
         if self.is_insert_at_action(request):
-            return super().get_form(request, obj, change, form=self.get_insert_at_form(), **kwargs)
+            # if request.method == "GET":
+            fields = kwargs.pop("fields")
+            if not fields:
+                # django displays by default an empty form if the user has no change permission. Then fields is in kwargs with None value.
+                # Hover, if this happens the follwing line will crash https://github.com/django/django/blob/cf79f92abee2ff5fd4fdcc1a124129a9773805b8/django/contrib/admin/options.py#L677
+                # So just pass in __all__ fields, so all fields will be excluded. ¯\_(ツ)_/¯
+                fields = '__all__'
+            return super().get_form(request, obj, change, form=self.get_insert_at_form(), fields=fields, **kwargs)
+            #return super().get_form(request, obj, change, form=self.get_insert_at_form(), **kwargs)
         elif self.is_move_to_action(request):
+            if request.method == "GET":
+                fields = kwargs.pop("fields")
+                if not fields:
+                    # same as above
+                    fields = '__all__'
+                return super().get_form(request, obj, change, form=self.get_move_to_form(), fields=fields, **kwargs)
             return super().get_form(request, obj, change, form=self.get_move_to_form(), **kwargs)
         return super().get_form(request, obj, change, **kwargs)
+    
+    
 
     def changelist_view(self, request, extra_context=None):
         """Adds request attribute to this admin view"""

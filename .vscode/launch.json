@@ -21,6 +21,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/manage.py",
             "console": "integratedTerminal",
+            "justMyCode": false,
             "args": [
                 "test"
             ]
