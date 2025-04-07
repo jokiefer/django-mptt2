@@ -3,7 +3,6 @@ from typing import Dict, Tuple
 from django.db.models import Case, Q, When
 from django.db.models.fields import PositiveIntegerField
 from django.db.models.manager import Manager
-from django.db.models.query import QuerySet
 from django.db.transaction import atomic
 from django.utils.translation import gettext as _
 
@@ -15,12 +14,14 @@ from mptt2.query import (AncestorsQuery, DescendantsQuery,
                          SameNodeQuery, TreeQuerySet)
 
 
-class TreeManager(Manager):
+class TreeManager(Manager.from_queryset(TreeQuerySet)):
 
-    queryset_class = TreeQuerySet
-
-    def get_queryset(self) -> QuerySet[queryset_class]:
-        return self.queryset_class(self.model, using=self._db)
+    @classmethod
+    def from_queryset(cls, queryset_class, class_name=None):
+        if not issubclass(queryset_class, TreeQuerySet):
+            raise TypeError("models with mptt support need to use TreeQuerySet")
+        return super(TreeManager, cls).from_queryset(
+            queryset_class, class_name=class_name)
 
     def _calculate_node_mptt_values_for_insert(self, node, target, position):
         node.mptt_tree = target.mptt_tree
