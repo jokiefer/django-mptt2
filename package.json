@@ -1,7 +1,7 @@
 {
     "dependencies": {
-        "sortablejs": "^1.15.0",
-        "gulp": "^4.0.2"
+        "sortablejs": "^1.15.7",
+        "gulp": "^5.0.1"
     },
     "scripts": {
         "install": "gulp"

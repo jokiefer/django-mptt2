@@ -56,13 +56,17 @@ class TestDragAndDrop(StaticLiveServerTestCase):
         # just a simple e2e test to figure out static sortablejs lib is provided as static file and drag and drop is principle working
         page = self.context.new_page()
         page.goto(f"{self.live_server_url}/admin/tests/simplenode/")
-
+        page.screenshot(path=f'./screenshots/{datetime.now().strftime("%H_%M_%S")}_test_result_{self.current_browser}.png')
         page.wait_for_selector('text=Select simple node to change')
 
         node_five = page.locator('li[data-target-id="5"]')
 
         node_three = page.locator('li[data-target-id="2"]')
 
-        node_five.drag_to(target=node_three, target_position={"x": 1, "y": 1}, )
+        node_five.drag_to(
+            target=node_three, 
+            source_position={"x": 1, "y": 1}, 
+            target_position={"x": 1, "y": 1}
+        )
 
         page.wait_for_selector('text=pk 5 | tree 1 | lft 2 | rgt 3')

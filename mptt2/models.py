@@ -91,7 +91,7 @@ class Node(Model):
         ]
         constraints = [
             CheckConstraint(
-                check=Q(mptt_rgt__gt=F("mptt_lft")),
+                condition=Q(mptt_rgt__gt=F("mptt_lft")),
                 name="%(app_label)s_%(class)s_rgt_gt_lft",
                 **violation_error_message_kwargs()
             ),
