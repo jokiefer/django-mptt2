@@ -14,7 +14,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 Removed
 ~~~~~~~
 
-* remove support for Django 4.2 and Python 3.9. The `django-mptt2` package no longer supports these older versions, allowing the project to focus on maintaining compatibility with newer releases of Django and Python.
+* remove support for Django 4.2 & 5.0 and Python 3.9. The `django-mptt2` package no longer supports these older versions, allowing the project to focus on maintaining compatibility with newer releases of Django and Python.
 
 Changed
 ~~~~~
