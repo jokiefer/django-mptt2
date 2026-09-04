@@ -1,4 +1,4 @@
 flake8==7.2.0
 autopep8==2.3.2
-tox==4.25.0
-playwright==1.51.0
+tox==4.61.2
+playwright==1.62.0

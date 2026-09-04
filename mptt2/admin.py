@@ -106,12 +106,20 @@ class MPTTModelAdmin(ModelAdmin):
     @display(description=_("Delete"))
     def delete_link(self, obj):
         if self.has_delete_permission(request=self.request, obj=obj):
-            return format_html(f'<a class="deletelink" href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_delete", args=(obj.id,))}">'f"{_('Delete')}"'</a>')
+            return format_html(
+                '<a class="deletelink" href="{}">{}</a>',
+                reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_delete", args=(obj.id,)),
+                _('Delete')
+            )
 
     @display(description=_("Move"))
     def move_link(self, obj):
         if self.has_change_permission(request=self.request, obj=obj):
-            return format_html(f'<a href="{reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_move", args=(obj.id,))}">'f"&#8982; {_('Move')}"'</a>')
+            return format_html(
+                '<a href="{}">&#8982; {}</a>',
+                reverse(f"admin:{obj._meta.app_label}_{obj._meta.model_name}_move", args=(obj.id,)),
+                _('Move')
+            )
 
 
     def tree_node_string(self, obj):
