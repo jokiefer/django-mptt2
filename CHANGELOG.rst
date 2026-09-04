@@ -19,7 +19,7 @@ Removed
 Changed
 ~~~~~
 
-* migrate to Django 6.2 and Python 3.12. The `django-mptt2` package is now compatible with the latest versions of Django and Python, ensuring continued support and access to new features and improvements.
+* migrate to Django 6.1 and Python 3.12. The `django-mptt2` package is now compatible with the latest versions of Django and Python, ensuring continued support and access to new features and improvements.
 * migrate to gulp 5.0.1 and sortablejs 1.15.7. The package now uses the latest versions of Gulp and SortableJS, providing improved performance, bug fixes, and new features for managing and sorting tree structures in the Django admin interface.
 
 
